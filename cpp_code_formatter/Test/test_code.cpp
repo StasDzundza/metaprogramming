@@ -1,3 +1,6 @@
+// some comment here
+static const int b = 0;
+//and one more comment
 class A{
 public:
     int a;

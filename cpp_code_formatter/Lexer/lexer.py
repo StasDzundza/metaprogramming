@@ -1,6 +1,7 @@
 from Lexer.patterns import *
 from Lexer.Automaton.automaton import *
 from Lexer.Automaton.finite_state_machine import *
+import re
 
 
 class Lexer:
@@ -13,9 +14,8 @@ class Lexer:
             line = file.readline()
             while line:
                 cur_line = line
-                #cur_line = cur_line[:-1]  # remove \n
                 i = 0
-                while i < (len(cur_line) - 1):
+                while i < len(cur_line):
                     is_matched = False
                     for pattern_pair in PATTERNS:
                         if isinstance(pattern_pair[0], FiniteStateMachine):
@@ -37,6 +37,14 @@ class Lexer:
                                 else:
                                     self.tokens.append(Token(pattern_pair[1], matched_text))
                                 break
+                        elif isinstance(pattern_pair[0], str):
+                            pattern = re.compile(pattern_pair[0])
+                            match_pos = pattern.search(cur_line, i)
+                            if match_pos is not None and match_pos.start() == i:
+                                matched_text = cur_line[match_pos.start():match_pos.end()]
+                                is_matched = True
+                                i = match_pos.end()
+                                self.tokens.append(Token(pattern_pair[1], matched_text))
                     if not is_matched:
                         self.tokens.append(Token(TokenName.ERROR_TOKEN, cur_line[i]))
                         i += 1

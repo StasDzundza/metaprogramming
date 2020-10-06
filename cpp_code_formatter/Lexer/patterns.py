@@ -3,6 +3,7 @@ from Lexer.Token.token import *
 
 
 PATTERNS = ((whitespace_state_machine(), TokenName.WHITESPACE),
+            (r"//.*$(\r|\n|\r\n|$)", TokenName.SINGLE_LINE_COMMENT),
             (separator_state_machine(), TokenName.SEPARATOR),
             (bracket_state_machine(), TokenName.BRACKET),
             (number_state_machine(), TokenName.INT_NUMBER),

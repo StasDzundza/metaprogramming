@@ -18,7 +18,7 @@ class TokenName(Enum):
     ERROR_TOKEN = 13                                                                                       # Done
     NOT_ENDED_MULTILINE_STRING_ERROR = 14
     TERNARY_OPERATOR = 15  # ?
-    COMMENT = 16  # //
+    SINGLE_LINE_COMMENT = 16  # //
     CHAR_SYMBOL = 17                                                                                       # Done
     FLOAT_NUMBER = 18
     ACCESS_MODIFIER = 19                                                                                   # Done
