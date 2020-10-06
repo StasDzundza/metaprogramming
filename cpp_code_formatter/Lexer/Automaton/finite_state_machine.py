@@ -10,7 +10,7 @@ class FiniteStateMachine:
         return next_state
 
     def can_stop(self):
-        return self.current_state.is_final()
+        return self.current_state.is_final
 
     def reset(self):
         self.current_state = self.initial_state

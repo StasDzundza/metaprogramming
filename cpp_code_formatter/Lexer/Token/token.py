@@ -2,25 +2,26 @@ from enum import Enum
 
 
 class TokenName(Enum):
-    WHITESPACE = 0  # \t, space, ......
-    INDENT = 1
-    DEDENT = 2
-    NEW_LINE = 3
-    COMMENT = 4  # //
-    OPERATOR = 5  # +, -, *, /, &, |, ^, =, +=, -=, %=, *=, /=, &=, |=, ^=, ~, <<, >>, %
-    COMPARISON_OPERATOR = 6  # <, <=, >, >=, ==, !=
-    DATA_TYPE = 7  # int, float, complex, str, bool
-    KEYWORD = 8
-    SEPARATOR = 9  # , ;:
-    BRACKET = 10  # (,), [, ], {,}
-    DOT = 11  # .
-    IDENTIFIER = 12
-    NUMBER = 13
-    STRING = 14
-    MULTILINE_STRING = 15
-    ERROR_TOKEN = 16
-    NOT_ENDED_MULTILINE_STRING_ERROR = 17
-    TERNARY_OPERATOR = 18  # ?
+    WHITESPACE = 0  # \t, space, ......                                                                    # Done
+    NEW_LINE = 1
+    OPERATOR = 2  # +, -, *, /, &, |, ^, =, +=, -=, %=, *=, /=, &=, |=, ^=, ~, <<, >>, %
+    COMPARISON_OPERATOR = 3  # <, <=, >, >=, ==, !=
+    DATA_TYPE = 4                                                                                          # Done
+    KEYWORD = 5                                                                                            # Done
+    SEPARATOR = 6  # , ;:                                                                                  # Done
+    BRACKET = 7  # (,), [, ], {,}                                                                          # Done
+    DOT = 8  # .
+    IDENTIFIER = 9                                                                                         # Done
+    INT_NUMBER = 10
+    STRING = 11                                                                                            # Done
+    MULTILINE_STRING = 12
+    ERROR_TOKEN = 13                                                                                       # Done
+    NOT_ENDED_MULTILINE_STRING_ERROR = 14
+    TERNARY_OPERATOR = 15  # ?
+    COMMENT = 16  # //
+    CHAR_SYMBOL = 17                                                                                       # Done
+    FLOAT_NUMBER = 18
+    ACCESS_MODIFIER = 19                                                                                   # Done
 
 
 class Token:

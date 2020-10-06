@@ -11,6 +11,9 @@ class SymbolTransition(Transition):
     def is_possible(self, c):
         return c == self.symbol
 
+    def get_state(self):
+        return self.state
+
 
 class FuncTransition(Transition):
     def __init__(self, transition_function, state):
@@ -19,3 +22,7 @@ class FuncTransition(Transition):
 
     def is_possible(self, c):
         return self.transition_function(c)
+
+    def get_state(self):
+        return self.state
+
