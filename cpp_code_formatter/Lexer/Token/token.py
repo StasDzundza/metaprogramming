@@ -4,7 +4,7 @@ from enum import Enum
 class TokenName(Enum):
     WHITESPACE = 0  # \t, space, ......                                                                    # Done
     NEW_LINE = 1                                                                                           # Done
-    OPERATOR = 2  # +, -, *, /, &, |, ^, =, +=, -=, %=, *=, /=, &=, |=, ^=, ~, <<, >>, %                   # Done
+    OPERATOR = 2  # +, -, *, /, &, |, ^, =, +=, -=, %=, *=, /=, &=, |=, ^=, ~, <<, >>, %, ->               # Done
     COMPARISON_OPERATOR = 3  # <, <=, >, >=, ==, !=                                                        # Done
     DATA_TYPE = 4                                                                                          # Done
     KEYWORD = 5                                                                                            # Done
@@ -21,7 +21,7 @@ class TokenName(Enum):
     CHAR_SYMBOL = 16                                                                                       # Done
     FLOAT_NUMBER = 17                                                                                      # Done
     ACCESS_MODIFIER = 18                                                                                   # Done
-    MULTILINE_COMMENT = 19  # Regex?
+    MULTILINE_COMMENT = 19                                                                                 # Done
     PREPROCESSOR = 20  # #                                                                                 # Done
 
 

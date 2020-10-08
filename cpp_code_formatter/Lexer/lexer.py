@@ -12,17 +12,15 @@ class Lexer:
         self.tokens.clear()
         with open(file_path, 'r') as file:
             line = file.read()
-            # while line:
-            cur_line = line
             i = 0
-            while i < len(cur_line):
+            while i < len(line):
                 is_matched = False
                 for pattern_pair in PATTERNS:
                     if isinstance(pattern_pair[0], FiniteStateMachine):
                         automaton = Automaton(pattern_pair[0])
-                        match_pos = automaton.match(cur_line, i)
+                        match_pos = automaton.match(line, i)
                         if match_pos[0] is not None and match_pos[1] is not None:
-                            matched_text = cur_line[match_pos[0]:match_pos[1]]
+                            matched_text = line[match_pos[0]:match_pos[1]]
                             i = match_pos[1]
                             is_matched = True
                             if pattern_pair[1] == TokenName.IDENTIFIER:
@@ -39,15 +37,14 @@ class Lexer:
                             break
                     elif isinstance(pattern_pair[0], str):
                         pattern = re.compile(pattern_pair[0], re.MULTILINE)
-                        match_pos = pattern.search(cur_line, i)
+                        match_pos = pattern.search(line, i)
                         if match_pos is not None and match_pos.start() == i:
-                            matched_text = cur_line[match_pos.start():match_pos.end()]
+                            matched_text = line[match_pos.start():match_pos.end()]
                             is_matched = True
                             i = match_pos.end()
                             self.tokens.append(Token(pattern_pair[1], matched_text))
                 if not is_matched:
-                    self.tokens.append(Token(TokenName.ERROR_TOKEN, cur_line[i]))
+                    self.tokens.append(Token(TokenName.ERROR_TOKEN, line[i]))
                     i += 1
-            # line = file.readline()
 
         return self.tokens
