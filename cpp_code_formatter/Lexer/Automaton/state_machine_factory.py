@@ -79,15 +79,6 @@ def identifier_state_machine():
     return FiniteStateMachine(initial)
 
 
-def number_state_machine():
-    initial = State(False)
-    q1 = State(True)
-    transition_function = lambda c: c.isdigit()
-    initial.add_transition(FuncTransition(transition_function, q1))
-    q1.add_transition(FuncTransition(transition_function, q1))
-    return FiniteStateMachine(initial)
-
-
 def char_symbol_state_machine():
     initial = State(False)
     q1 = State(False)  # '

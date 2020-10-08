@@ -1,3 +1,4 @@
+#     include     <iostream>
 // some comment here
 static const int b = 0;
 //and one more comment
@@ -9,9 +10,10 @@ private:
 }
 
 int main(){
-    std::string = ("hello");
-    int a = 12;
-    a*=3
+    std::string s= ("?hello?");
+    int a = 12;double d = -3.12
+    a*=-3;
+    bool val= true?true:false;
     for(int i = 0; i < 10; i++){
         //none
     }

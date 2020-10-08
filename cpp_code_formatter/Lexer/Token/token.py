@@ -17,12 +17,14 @@ class TokenName(Enum):
     MULTILINE_STRING = 12
     ERROR_TOKEN = 13                                                                                       # Done
     NOT_ENDED_MULTILINE_STRING_ERROR = 14
-    TERNARY_OPERATOR = 15  # ?
+    TERNARY_OPERATOR = 15  # ?                                                                             # Done
     SINGLE_LINE_COMMENT = 16  # //                                                                         # Done
     CHAR_SYMBOL = 17                                                                                       # Done
-    FLOAT_NUMBER = 18  # Regex?
+    FLOAT_NUMBER = 18                                                                                      # Done
     ACCESS_MODIFIER = 19                                                                                   # Done
     MULTILINE_COMMENT = 20  # Regex?
+    PREPROCESSOR = 21  # #                                                                                 # Done
+
 
 class Token:
     def __init__(self, token_name, value=None):
