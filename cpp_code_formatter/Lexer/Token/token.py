@@ -16,14 +16,13 @@ class TokenName(Enum):
     STRING = 11                                                                                            # Done
     MULTILINE_STRING = 12
     ERROR_TOKEN = 13                                                                                       # Done
-    NOT_ENDED_MULTILINE_STRING_ERROR = 14
-    TERNARY_OPERATOR = 15  # ?                                                                             # Done
-    SINGLE_LINE_COMMENT = 16  # //                                                                         # Done
-    CHAR_SYMBOL = 17                                                                                       # Done
-    FLOAT_NUMBER = 18                                                                                      # Done
-    ACCESS_MODIFIER = 19                                                                                   # Done
-    MULTILINE_COMMENT = 20  # Regex?
-    PREPROCESSOR = 21  # #                                                                                 # Done
+    TERNARY_OPERATOR = 14  # ?                                                                             # Done
+    SINGLE_LINE_COMMENT = 15  # //                                                                         # Done
+    CHAR_SYMBOL = 16                                                                                       # Done
+    FLOAT_NUMBER = 17                                                                                      # Done
+    ACCESS_MODIFIER = 18                                                                                   # Done
+    MULTILINE_COMMENT = 19  # Regex?
+    PREPROCESSOR = 20  # #                                                                                 # Done
 
 
 class Token:
