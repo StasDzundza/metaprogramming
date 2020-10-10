@@ -45,12 +45,30 @@ class Formatter():
                 return False
         return False
 
+    def add_spaces_around_operator(self, output, operator):
+        if operator in ("=", "+=", "-=", "/=", "*=", "^=", "&=", "^=", "<<=", ">>=", "%="):
+            return ' ' + operator + ' ' if around_assignment_op else operator
+        if operator in ("&&", "||"):
+            return ' ' + operator + ' ' if around_logical_op else operator
+        if operator in ("==", "!="):
+            return ' ' + operator + ' ' if around_equality_op else operator
+        if operator in ("<", "<=", ">", ">=", "!=", "<=>"):
+            return ' ' + operator + ' ' if around_relational_op else operator
+        if operator in ("&", "^", "|"):
+            return ' ' + operator + ' ' if around_bitwise_op else operator
+        if operator in ("+", "-"):
+            return ' ' + operator + ' ' if around_additive_op else operator
+        if operator in (">>", "<<"):
+            return ' ' + operator + ' ' if around_shift_op else operator
+        if operator in (".", "->", "->*", ".*"):
+            return ' ' + operator + ' ' if around_pointer_to_member_op else operator
+        return operator
+
     def add_indent(self, indent_level, output, after=False):
         if self.need_indent:
             indent = ' ' * indent_len * indent_level
             output = (output + indent if after else indent + output)
         return output
-
 
     def format_file(self, path_to_code):
         token_stack = []
@@ -66,17 +84,20 @@ class Formatter():
                 if cur_token.value in self.KEYWORDS_WITH_PARENTHESIS:
                     token_stack.append(cur_token.value)
                     stack_value = cur_token.value
-                    cur_output = (cur_token.value + ' ' if self.is_space_before_parenthesis(cur_token.value) else cur_token.value)
+                    cur_output = (
+                        cur_token.value + ' ' if self.is_space_before_parenthesis(cur_token.value) else cur_token.value)
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
                 else:
                     pass
             elif cur_token.token_name == TokenName.IDENTIFIER:
                 if i + 1 < len(tokens) and tokens[i + 1].value == '(':
-                    cur_output = (cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
+                    cur_output = (
+                        cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
-                elif i + 1 < len(tokens) and tokens[i + 1].token_name in (TokenName.BRACKET, TokenName.OPERATOR, TokenName.WHITESPACE):
+                elif i + 1 < len(tokens) and tokens[i + 1].token_name in (
+                TokenName.BRACKET, TokenName.OPERATOR, TokenName.WHITESPACE):
                     cur_output = cur_token.value
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
@@ -117,6 +138,10 @@ class Formatter():
                     self.need_indent = False
             elif cur_token.token_name == TokenName.DATA_TYPE:
                 cur_output = cur_token.value + ' '
+                cur_output = self.add_indent(indent_level, cur_output)
+                self.need_indent = False
+            elif cur_token.token_name == TokenName.OPERATOR:
+                cur_output = self.add_spaces_around_operator(cur_output, cur_token.value)
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.NEW_LINE or cur_token.token_name == TokenName.WHITESPACE:

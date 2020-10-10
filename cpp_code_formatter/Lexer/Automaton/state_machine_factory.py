@@ -129,8 +129,8 @@ def operator_state_machine():
 
     q1.add_transition(SymbolTransition('+', q2))  # ++
     q3.add_transition(SymbolTransition('-', q4))  # --
-    q13.add_transition(SymbolTransition('<', q13))  # >>
-    q14.add_transition(SymbolTransition('>', q15))  # <<
+    q12.add_transition(SymbolTransition('<', q13))  # <<
+    q14.add_transition(SymbolTransition('>', q15))  # >>
     q3.add_transition(SymbolTransition('>', q17))  # ->
     q17.add_transition(SymbolTransition('*', q18))  # ->*
     q10.add_transition(SymbolTransition('*', q20))  # .*
