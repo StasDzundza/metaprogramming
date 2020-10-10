@@ -30,6 +30,8 @@ class Lexer:
                                     self.tokens.append(Token(TokenName.DATA_TYPE, matched_text))
                                 elif matched_text in ACCESS_MODIFIERS:
                                     self.tokens.append(Token(TokenName.ACCESS_MODIFIER, matched_text))
+                                elif matched_text in PREPROCESSOR_DIRECTIVES:
+                                    self.tokens.append(Token(TokenName.PREPROCESSOR_DIRECTIVE, matched_text))
                                 else:
                                     self.tokens.append(Token(TokenName.IDENTIFIER, matched_text))
                             else:

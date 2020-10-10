@@ -1,14 +1,11 @@
-import Lexer.lexer
-import Formatter.formatter
+from Formatter.formatter import *
 
 
 if __name__ == '__main__':
     print('C++ code formatter')
     print('####################################\n')
-    lexer = Lexer()
-    tokens = lexer.tokenize("Test/test_code.cpp")
-    for token in tokens:
-        print(token.to_string())
+    formatter = Formatter()
+    print(formatter.format_file("Test/test_code.cpp"))
     print('\n####################################')
     print('Finished')
 

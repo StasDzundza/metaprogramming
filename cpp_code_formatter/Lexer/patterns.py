@@ -28,3 +28,5 @@ DATA_TYPES = ("int", "float", "double", "char", "bool", "unsigned", "signed", "a
               "void")
 
 ACCESS_MODIFIERS = ("private", "protected", "public")
+
+PREPROCESSOR_DIRECTIVES = ("include", "define", "undef", "ifdef", "ifndef", "endif")

@@ -23,6 +23,7 @@ class TokenName(Enum):
     ACCESS_MODIFIER = 18                                                                                   # Done
     MULTILINE_COMMENT = 19                                                                                 # Done
     PREPROCESSOR = 20  # #                                                                                 # Done
+    PREPROCESSOR_DIRECTIVE = 21                                                                            # Done
 
 
 class Token:
