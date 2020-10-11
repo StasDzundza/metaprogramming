@@ -8,7 +8,7 @@ class Formatter:
         self.KEYWORDS_WITH_PARENTHESIS = ("if", "for", "while", "switch", "catch")
         self.KEYWORDS_WITH_SPACE_AFTER = ("throw", "const", "new", "delete", "explicit", "export", "friend", "goto",
                                           "inline", "namespace", "mutual", "virtual", "register", "return", "static",
-                                          "using", "volatile", "typedef", "class", "struct", "enum")
+                                          "using", "volatile", "typedef", "class", "struct", "enum", "case")
         self.log_file_name = "log.log"
         self.need_indent = False
 
@@ -90,7 +90,6 @@ class Formatter:
         output = ""
         lexer = Lexer()
         indent_level = 0
-        stack_value = None
         last_keyword = ''
         tokens = lexer.tokenize(path_to_code)
         for i in range(0, len(tokens)):
@@ -100,11 +99,12 @@ class Formatter:
                 last_keyword = cur_token.value
                 if cur_token.value in self.KEYWORDS_WITH_PARENTHESIS:
                     token_stack.append(cur_token.value)
-                    stack_value = cur_token.value
                     cur_output = (
                         cur_token.value + ' ' if self.is_space_before_parenthesis(cur_token.value) else cur_token.value)
                 elif cur_token.value in self.KEYWORDS_WITH_SPACE_AFTER:
                     cur_output = cur_token.value + ' '
+                    if cur_token.value == "case":
+                        pass
                 elif cur_token.value in ("else", "catch"):
                     cur_output = ' ' + cur_token.value if self.is_space_before_keyword(cur_token.value) else cur_token.value
                 else:
@@ -126,6 +126,8 @@ class Formatter:
                     self.need_indent = False
             elif cur_token.token_name == TokenName.BRACKET:
                 if cur_token.value == '{':
+                    if len(token_stack) > 0 and token_stack[-1].value == "class":
+                        token_stack.pop()
                     cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n" # TODO check if need \n and indent ++ after {
                     last_keyword = ''
                     cur_output = self.add_indent(indent_level, cur_output)
@@ -133,8 +135,8 @@ class Formatter:
                     indent_level += 1
                 elif cur_token.value == '}':
                     indent_level -= 1
-                    if (i + 1 < len(tokens) and tokens[i+1].value in ("else", "catch")) or \
-                            (i + 2 < len(tokens) and tokens[i+2].value in ("else", "catch")):
+                    if (i + 1 < len(tokens) and tokens[i+1].value in ("else", "catch", ";")) or \
+                            (i + 2 < len(tokens) and tokens[i+2].value in ("else", "catch", ";")):
                         cur_output = "}"
                     else:
                         cur_output = "}\n"
@@ -144,8 +146,12 @@ class Formatter:
                     cur_output = ')'
                     if len(token_stack) > 0 and token_stack[-1] == "identifier":
                         token_stack.pop()
-                    elif stack_value is not None and stack_value in self.KEYWORDS_WITH_PARENTHESIS:
-                        stack_value = None
+                    elif len(token_stack) > 0 and token_stack[-1] in self.KEYWORDS_WITH_PARENTHESIS:
+                        if (i+2 < len(tokens) and tokens[i+1].token_name in (TokenName.WHITESPACE, TokenName.NEW_LINE) and tokens[i+2].value == '{') or \
+                             (i+1 < len(tokens) and tokens[i+1].value == '{'):
+                            pass
+                        else:
+                            cur_output = cur_output + '\n' + (' ' * indent_len * (indent_level + 1))
                         token_stack.pop()
                     self.need_indent = False
                 else:
@@ -165,6 +171,15 @@ class Formatter:
                         token_stack.pop()
                         cur_output = ' :' if before_colon_ternary else ':'
                         cur_output = cur_output + (' ' if after_colon_ternary else '')
+                    elif len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:
+                        token_stack.pop()
+                        cur_output = ":\n"
+                        self.need_indent = True
+                    elif len(token_stack) > 0 and (token_stack[-1] == "case" or token_stack[-1] == "default"):
+                        token_stack.pop()
+                        cur_output = ":\n"
+                        indent_level += 1
+                        self.need_indent = True
                     else:
                         cur_output = cur_token.value
                 else:
@@ -187,6 +202,13 @@ class Formatter:
                 token_stack.append('?')
                 cur_output = ' ?' if before_ternary else '?'
                 cur_output = cur_output + (' ' if after_ternary else '')
+            elif cur_token.token_name == TokenName.ACCESS_MODIFIER:
+                if (i+1 < len(tokens) and tokens[i+1].token_name == TokenName.IDENTIFIER) or \
+                    (i+2 < len(tokens) and tokens[i+1].token_name == TokenName.WHITESPACE and tokens[i+2].token_name == TokenName.IDENTIFIER):
+                    cur_output = cur_token.value + ' '
+                else:
+                    token_stack.append(cur_token.value)
+                    cur_output = cur_token.value
             elif cur_token.token_name == TokenName.WHITESPACE:
                 pass
             elif cur_token.token_name == TokenName.NEW_LINE:
@@ -201,3 +223,6 @@ class Formatter:
             output = output + cur_output
 
         return output
+
+    def format_files_in_dir(self, dir_path):
+        pass

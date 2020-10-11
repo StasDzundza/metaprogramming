@@ -37,7 +37,7 @@ def whitespace_state_machine():
     initial = State(False)
     q1 = State(True)
 
-    func_transition = lambda c: c == ' ' or c == '\t' or c == '\n' or c == "\r\n"
+    func_transition = lambda c: c == ' ' or c == '\t'
     q1.add_transition(FuncTransition(func_transition, q1))
     initial.add_transition(FuncTransition(func_transition, q1))
     return FiniteStateMachine(initial)
@@ -46,7 +46,7 @@ def whitespace_state_machine():
 def new_line_state_machine():
     initial = State(False)
     q1 = State(True)
-    transition_function = lambda c: c == '\n' or c == '\r'
+    transition_function = lambda c: c == '\n' or c == '\r' or c == "\r\n"
     initial.add_transition(FuncTransition(transition_function, q1))
     return FiniteStateMachine(initial)
 
