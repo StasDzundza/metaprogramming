@@ -1,6 +1,8 @@
 from Lexer.lexer import *
 from Formatter.config import *
 from Lexer.patterns import *
+import os
+from os.path import *
 
 
 class Formatter:
@@ -12,8 +14,9 @@ class Formatter:
         self.log_file_name = "log.log"
         self.need_indent = False
 
-    def code_style_error_log(self):  # TODO add logging for code style error
-        pass
+    def code_style_error_log(self, message):
+        with open(self.log_file_name, 'a') as file:
+            file.write(message + '\n')
 
     def is_space_before_parenthesis(self, keyword):
         if keyword == "if":
@@ -225,4 +228,21 @@ class Formatter:
         return output
 
     def format_files_in_dir(self, dir_path):
-        pass
+        files = []
+        tree = os.walk(dir_path)
+        for d in tree:
+            cur_dir_name = d[0]
+            cur_dir_files = d[2]
+            for file in cur_dir_files:
+                if file.endswith(".cpp"):
+                    files.append(cur_dir_name + '/' + file)
+        for file in files:
+            print("#######" + file + "#######")
+            formatted_code = self.format_file(file)
+            self.save_formatted_file(formatted_code,file)
+
+    def save_formatted_file(self, formatted_code, file_path):
+        file_path = file_path[:-4]
+        file_path = file_path + "_formatted.cpp"
+        with open(file_path, 'w') as file:
+            file.write(formatted_code)
