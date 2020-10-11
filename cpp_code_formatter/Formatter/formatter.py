@@ -8,7 +8,7 @@ class Formatter:
         self.KEYWORDS_WITH_PARENTHESIS = ("if", "for", "while", "switch", "catch")
         self.KEYWORDS_WITH_SPACE_AFTER = ("throw", "const", "new", "delete", "explicit", "export", "friend", "goto",
                                           "inline", "namespace", "mutual", "virtual", "register", "return", "static",
-                                          "using", "volatile", "typedef")
+                                          "using", "volatile", "typedef", "class", "struct", "enum")
         self.log_file_name = "log.log"
         self.need_indent = False
 
@@ -51,6 +51,13 @@ class Formatter:
             return before_try_left_brace
         if keyword == "catch":
             return before_catch_left_brace
+        return False
+
+    def is_space_before_keyword(self, keyword):
+        if keyword == "else":
+            return before_else
+        if keyword == "catch":
+            return before_catch
         return False
 
     def add_spaces_around_operator(self, operator):
@@ -98,6 +105,8 @@ class Formatter:
                         cur_token.value + ' ' if self.is_space_before_parenthesis(cur_token.value) else cur_token.value)
                 elif cur_token.value in self.KEYWORDS_WITH_SPACE_AFTER:
                     cur_output = cur_token.value + ' '
+                elif cur_token.value in ("else", "catch"):
+                    cur_output = ' ' + cur_token.value if self.is_space_before_keyword(cur_token.value) else cur_token.value
                 else:
                     if cur_token.value in ("class", "struct", "enum", "template"):
                         token_stack.append(cur_token.value)
@@ -105,33 +114,37 @@ class Formatter:
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.IDENTIFIER:
-                if i + 1 < len(tokens) and tokens[i + 1].value == '(':
-                    cur_output = (
-                        cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
-                    cur_output = self.add_indent(indent_level, cur_output)
-                    self.need_indent = False
-                elif i + 1 < len(tokens) and tokens[i + 1].token_name in (
-                        TokenName.BRACKET, TokenName.OPERATOR, TokenName.WHITESPACE):
-                    cur_output = cur_token.value
+                if (i + 1 < len(tokens) and tokens[i + 1].value == '(') or \
+                        (i + 2 < len(tokens) and tokens[i + 1].token_name == TokenName.WHITESPACE and tokens[i + 2].value == '('):
+                    token_stack.append("identifier")
+                    cur_output = (cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
                 else:
-                    cur_output = cur_token.value + ' '
+                    cur_output = cur_token.value
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
             elif cur_token.token_name == TokenName.BRACKET:
                 if cur_token.value == '{':
-                    indent_level += 1
-                    self.need_indent = True
                     cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n" # TODO check if need \n and indent ++ after {
+                    last_keyword = ''
+                    cur_output = self.add_indent(indent_level, cur_output)
+                    self.need_indent = True
+                    indent_level += 1
                 elif cur_token.value == '}':
                     indent_level -= 1
-                    cur_output = "}\n"
-                    self.need_indent = True
+                    if (i + 1 < len(tokens) and tokens[i+1].value in ("else", "catch")) or \
+                            (i + 2 < len(tokens) and tokens[i+2].value in ("else", "catch")):
+                        cur_output = "}"
+                    else:
+                        cur_output = "}\n"
                     cur_output = self.add_indent(indent_level, cur_output)
+                    self.need_indent = True
                 elif cur_token.value == ')':
                     cur_output = ')'
-                    if stack_value is not None and stack_value in self.KEYWORDS_WITH_PARENTHESIS:
+                    if len(token_stack) > 0 and token_stack[-1] == "identifier":
+                        token_stack.pop()
+                    elif stack_value is not None and stack_value in self.KEYWORDS_WITH_PARENTHESIS:
                         stack_value = None
                         token_stack.pop()
                     self.need_indent = False
@@ -144,12 +157,18 @@ class Formatter:
                     if len(token_stack) > 0 and token_stack[-1] == "for":
                         cur_output = ';'  # TODO check for spaces near ;
                     else:
+                        last_keyword = ''
                         cur_output = ';\n'
                         self.need_indent = True
+                elif cur_token.value == ':':
+                    if len(token_stack) > 0 and token_stack[-1] == '?':
+                        token_stack.pop()
+                        cur_output = ' :' if before_colon_ternary else ':'
+                        cur_output = cur_output + (' ' if after_colon_ternary else '')
+                    else:
+                        cur_output = cur_token.value
                 else:
                     cur_output = cur_token.value
-                    cur_output = self.add_indent(indent_level, cur_output)
-                    self.need_indent = False
             elif cur_token.token_name == TokenName.DATA_TYPE:
                 cur_output = cur_token.value + ' '
                 cur_output = self.add_indent(indent_level, cur_output)
@@ -164,6 +183,10 @@ class Formatter:
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
+            elif cur_token.token_name == TokenName.TERNARY_OPERATOR:
+                token_stack.append('?')
+                cur_output = ' ?' if before_ternary else '?'
+                cur_output = cur_output + (' ' if after_ternary else '')
             elif cur_token.token_name == TokenName.WHITESPACE:
                 pass
             elif cur_token.token_name == TokenName.NEW_LINE:
