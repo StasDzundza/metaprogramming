@@ -61,3 +61,7 @@ default:int c = a;
 break;
 default:int c = a;
 }
+
+template<typename K, class V = list<K> >
+class hash {
+};

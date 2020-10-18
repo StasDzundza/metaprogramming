@@ -46,3 +46,13 @@ before_ternary = True
 before_colon_ternary = True
 after_colon_ternary = True
 after_ternary = True
+
+# template declaration
+before_template_declaration = True
+within_template_declaration = False
+within_empty_template_declaration = False
+
+# template instantiation
+before_template_instantiation = False
+within_template_instantiation = False
+within_empty_template_instantiation = False

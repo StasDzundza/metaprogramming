@@ -2,7 +2,6 @@ from Lexer.lexer import *
 from Formatter.config import *
 from Lexer.patterns import *
 import os
-from os.path import *
 
 
 class Formatter:
@@ -10,9 +9,10 @@ class Formatter:
         self.KEYWORDS_WITH_PARENTHESIS = ("if", "for", "while", "switch", "catch")
         self.KEYWORDS_WITH_SPACE_AFTER = ("throw", "const", "new", "delete", "explicit", "export", "friend", "goto",
                                           "inline", "namespace", "mutual", "virtual", "register", "return", "static",
-                                          "using", "volatile", "typedef", "class", "struct", "enum", "case")
+                                          "using", "volatile", "typedef", "class", "struct", "enum", "case", "typename")
         self.log_file_name = "log.log"
         self.need_indent = False
+        self.config_file_path = "Formatter/config.py"
 
     def code_style_error_log(self, message):
         with open(self.log_file_name, 'a') as file:
@@ -101,6 +101,10 @@ class Formatter:
             cur_output = ""
             if cur_token.token_name == TokenName.KEYWORD:
                 last_keyword = cur_token.value
+                if cur_token.value in ("class", "struct", "enum", "template"):
+                    token_stack.append(cur_token.value)
+                    if cur_token.value == "class" and "template" in token_stack:
+                        token_stack.pop()  # if class instead typename in template
                 if cur_token.value in self.KEYWORDS_WITH_PARENTHESIS:
                     token_stack.append(cur_token.value)
                     cur_output = (
@@ -113,8 +117,6 @@ class Formatter:
                     cur_output = ' ' + cur_token.value if self.is_space_before_keyword(
                         cur_token.value) else cur_token.value
                 else:
-                    if cur_token.value in ("class", "struct", "enum", "template"):
-                        token_stack.append(cur_token.value)
                     cur_output = cur_token.value
                 if cur_token.value in ("case", "default"):
                     token_stack.append(cur_token.value)
@@ -224,10 +226,23 @@ class Formatter:
             elif cur_token.token_name == TokenName.OPERATOR:
                 if len(token_stack) > 0 and token_stack[-1] == "include" and cur_token.value in ('<', '>'):
                     cur_output = ('<' if cur_token.value == '<' else '>')
+                elif cur_token.value == '<' and len(token_stack) > 0 and token_stack[-1] == "template":
+                    token_stack.append('<')
+                    cur_output = " <" if before_template_declaration else '<'
+                    cur_output = cur_output + (' ' if within_template_declaration else '')
+                elif cur_token.value == '>' and len(token_stack) > 0 and token_stack[-1] == '<':
+                    token_stack.pop()  # < pop
+                    cur_output = " >" if within_template_declaration else '>'
+                    if len(token_stack) > 0 and token_stack[-1] == 'template':
+                        cur_output = cur_output + '\n'
+                        token_stack.pop()  # template pop
+                elif cur_token.value == '<' and len(token_stack) > 0 and "template" in token_stack:
+                    token_stack.append('<')
+                    cur_output = '<'
                 else:
                     cur_output = self.add_spaces_around_operator(cur_token.value)
-                    cur_output = self.add_indent(indent_level, cur_output)
-                    self.need_indent = False
+                    #cur_output = self.add_indent(indent_level, cur_output)
+                self.need_indent = False
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
@@ -258,7 +273,7 @@ class Formatter:
 
         return output
 
-    def format_files_in_dir(self, dir_path):
+    def format_files_in_project(self, dir_path):
         files = []
         tree = os.walk(dir_path)
         for d in tree:
@@ -272,8 +287,36 @@ class Formatter:
             formatted_code = self.format_file(file)
             self.save_formatted_file(formatted_code, file)
 
+    def format_files_in_dir(self, dir_path):
+        files = []
+        tree = os.walk(dir_path)
+        dir = tree[0]
+        cur_dir_name = dir[0]
+        cur_dir_files = dir[2]
+        for file in cur_dir_files:
+            if file.endswith(".cpp"):
+                files.append(cur_dir_name + '/' + file)
+        for file in files:
+            print("#######" + file + "#######")
+            formatted_code = self.format_file(file)
+            self.save_formatted_file(formatted_code, file)
+
+    def format_single_file(self, file_path):
+        formatted_code = self.format_file(file_path)
+        self.save_formatted_file(formatted_code, file_path)
+
     def save_formatted_file(self, formatted_code, file_path):
         file_path = file_path[:-4]
         file_path = file_path + "_formatted.cpp"
         with open(file_path, 'w') as file:
             file.write(formatted_code)
+
+    def set_config_path(self, config_file_path):
+        self.config_file_path = config_file_path
+
+    def show_help(self):
+        with open("Readme.md", 'r', encoding="utf-8") as file:
+            print(file.read())
+
+    def verify_file(self, file_path):
+        pass
