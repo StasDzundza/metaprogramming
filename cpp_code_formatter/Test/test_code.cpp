@@ -45,16 +45,19 @@ Method(Flod(),'
 
            << 23; }}
 
-class MyClass                  {      public:int a;int b = 6;private:
+class MyClass                  { int x,y; double e,d;     public:int a;int b = 6;private:
              double c = -99;
              void foo();
 };
 
 class NotMyClass: public MyClass{
-NotMyClass():a{6}
-private:int a;};
+NotMyClass():a{6}, b{7} {}
+private:int a;int b;};
 
-switch(a){case 1: int b = a;break;case 2:int b = a;int c = b;
+switch(a){case 1: int b = a;break;case 2:int b = a;switch(b){case 1: int b = a;break;case 2:int b = a;int c = b;
+break;
+default:int c = a;
+}int c = b;
 break;
 default:int c = a;
 }

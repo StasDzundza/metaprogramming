@@ -24,7 +24,7 @@ around_pointer_to_member_op = False
 
 # before left brace
 before_ns_left_brace = False
-before_init_list_left_brace = False  # TODO implement  [[maybe_unused]]
+before_init_list_left_brace = False
 before_class_struct_left_brace = True
 before_function_left_brace = True  # TODO implement
 before_if_left_brace = True
@@ -38,7 +38,7 @@ before_catch_left_brace = True
 
 # before keywords
 before_else = True
-before_while = True  # TODO implement  [[maybe_unused]]
+before_while = True
 before_catch = True
 
 # in ternary operator
