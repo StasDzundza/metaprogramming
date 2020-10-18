@@ -14,10 +14,6 @@ class Formatter:
         self.need_indent = False
         self.config_file_path = "Formatter/config.py"
 
-    def code_style_error_log(self, message):
-        with open(self.log_file_name, 'a') as file:
-            file.write(message + '\n')
-
     def is_space_before_parenthesis(self, keyword):
         if keyword == "if":
             return if_parenthesis
@@ -95,7 +91,8 @@ class Formatter:
         indent_level = 0
         last_keyword = ''
         first_case = True
-        tokens = lexer.tokenize(path_to_code)
+        with open(path_to_code, 'r', encoding="utf-8") as file:
+            tokens = lexer.tokenize(file.read())
         for i in range(0, len(tokens)):
             cur_token = tokens[i]
             cur_output = ""
@@ -280,7 +277,7 @@ class Formatter:
             cur_dir_name = d[0]
             cur_dir_files = d[2]
             for file in cur_dir_files:
-                if file.endswith(".cpp"):
+                if file.endswith(".cpp") or file.endswith(".h"):
                     files.append(cur_dir_name + '/' + file)
         for file in files:
             print("#######" + file + "#######")
@@ -290,12 +287,13 @@ class Formatter:
     def format_files_in_dir(self, dir_path):
         files = []
         tree = os.walk(dir_path)
-        dir = tree[0]
-        cur_dir_name = dir[0]
-        cur_dir_files = dir[2]
-        for file in cur_dir_files:
-            if file.endswith(".cpp"):
-                files.append(cur_dir_name + '/' + file)
+        for d in tree:
+            cur_dir_name = d[0]
+            cur_dir_files = d[2]
+            for file in cur_dir_files:
+                if file.endswith(".cpp") or file.endswith(".h"):
+                    files.append(cur_dir_name + '/' + file)
+            break
         for file in files:
             print("#######" + file + "#######")
             formatted_code = self.format_file(file)
@@ -319,4 +317,29 @@ class Formatter:
             print(file.read())
 
     def verify_file(self, file_path):
-        pass
+        logs = file_path + '\n\n'
+        lexer = Lexer()
+        lexer2 = Lexer()
+        with open(file_path, 'r', encoding="utf-8") as start_file:
+            not_formatted_tokens = lexer.tokenize(start_file.read())
+        formatted_code = self.format_file(file_path)
+        formatted_tokens = lexer2.tokenize(formatted_code)
+        not_formatted_tokens = self.remove_whitespace_tokens(not_formatted_tokens)
+        formatted_tokens = self.remove_whitespace_tokens(formatted_tokens)
+        for i in range(0, len(formatted_tokens) - 1):
+            cur_log = ''
+            if not_formatted_tokens[i].line != formatted_tokens[i].line or not_formatted_tokens[i].column != formatted_tokens[i].column:
+                cur_log = "ERROR at line " + str(not_formatted_tokens[i].line) + ", column " + str(not_formatted_tokens[i].column) + \
+                    ". Current token (" + not_formatted_tokens[i].value + ") should be at line " + str(formatted_tokens[i].line) + \
+                    ", column " + str(formatted_tokens[i].column) + '\n\n'
+            logs = logs + cur_log
+            print(cur_log)
+        with open(self.log_file_name, 'a', encoding="utf-8") as file:
+            file.write(logs)
+
+    def remove_whitespace_tokens(self, tokens):
+        new_tokens = []
+        for token in tokens:
+            if token.token_name not in (TokenName.WHITESPACE, TokenName.NEW_LINE):
+                new_tokens.append(token)
+        return new_tokens

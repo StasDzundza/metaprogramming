@@ -27,10 +27,12 @@ class TokenName(Enum):
 
 
 class Token:
-    def __init__(self, token_name, value=None):
+    def __init__(self, token_name, value=None, line=0, column=0):
         self.token_name = token_name
         self.value = value
+        self.line = line
+        self.column = column
 
     def to_string(self):
         if self.value is not None:
-            return "{" + self.token_name.name + " | " + self.value + "}"
+            return "{" + self.token_name.name + " | " + self.value + "} line " + str(self.line) + ", column " + str(self.column)

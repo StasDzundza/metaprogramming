@@ -4,6 +4,12 @@ import sys
 if __name__ == '__main__':
     print('C++ code formatter')
     print('####################################\n')
+    # with open("Test/test_code.cpp", 'r', encoding="utf-8") as file:
+    #     text = file.read()
+    # lexer = Lexer()
+    # tokens = lexer.tokenize(text)
+    # for token in tokens:
+    #     print(token.to_string())
     formatter = Formatter()
     if sys.argv[1] in ("-h", "--help"):
         formatter.show_help()
