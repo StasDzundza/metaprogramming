@@ -270,6 +270,8 @@ class Formatter:
                 elif cur_token.value == '<' and len(token_stack) > 0 and "template" in token_stack:
                     token_stack.append('<')
                     cur_output = '<'
+                elif cur_token.value == '!':
+                    cur_output = '! ' if self.c["around_unary_op"] else '!'
                 else:
                     cur_output = self.add_spaces_around_operator(cur_token.value)
                 self.need_indent = False
@@ -304,6 +306,12 @@ class Formatter:
 
             output = output + cur_output
 
+        l1 = Lexer()
+        l2 = Lexer()
+        with open(path_to_code, 'r', encoding="utf-8") as file:
+            old = l1.tokenize(file.read())
+        new = l2.tokenize(output)
+        self.verify(old, new)
         return output
 
     def format_files_in_project(self, dir_path):
@@ -340,10 +348,16 @@ class Formatter:
         self.save_formatted_file(formatted_code, file_path)
 
     def save_formatted_file(self, formatted_code, file_path):
-        file_path = file_path[:-4]
-        file_path = file_path + "_formatted.cpp"
-        with open(file_path, 'w') as file:
-            file.write(formatted_code)
+        if file_path.endswith(".cpp"):
+            file_path = file_path[:-4]
+            file_path = file_path + "_formatted.cpp"
+            with open(file_path, 'w') as file:
+                file.write(formatted_code)
+        elif file_path.endswith(".h"):
+            file_path = file_path[:-2]
+            file_path = file_path + "_formatted.h"
+            with open(file_path, 'w') as file:
+                file.write(formatted_code)
 
     def show_help(self):
         with open("Readme.md", 'r', encoding="utf-8") as file:
@@ -366,7 +380,7 @@ class Formatter:
                     ". Current token (" + not_formatted_tokens[i].value + ") should be at line " + str(formatted_tokens[i].line) + \
                     ", column " + str(formatted_tokens[i].column) + '\n\n'
             logs = logs + cur_log
-            print(cur_log)
+            print(logs)
         with open(self.log_file_name, 'a', encoding="utf-8") as file:
             file.write(logs)
 
@@ -384,4 +398,17 @@ class Formatter:
             self.c = json.loads(config)
         return self.c
 
+    def verify(self, old_tokens, new_tokens):
+        logs = ""
+        old_tokens = self.remove_whitespace_tokens(old_tokens)
+        new_tokens = self.remove_whitespace_tokens(new_tokens)
+        for i in range(0, len(new_tokens) - 1):
+            cur_log = ''
+            if old_tokens[i].line != new_tokens[i].line or old_tokens[i].column != new_tokens[i].column:
+                cur_log = "ERROR at line " + str(old_tokens[i].line) + ", column " + str(old_tokens[i].column) + \
+                    ". Current token (" + old_tokens[i].value + ") should be at line " + str(new_tokens[i].line) + \
+                    ", column " + str(new_tokens[i].column) + '\n\n'
+            logs = logs + cur_log
+        with open(self.log_file_name, 'a', encoding="utf-8") as file:
+            file.write(logs)
 
