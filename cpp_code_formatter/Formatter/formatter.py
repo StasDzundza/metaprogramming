@@ -1,7 +1,7 @@
 from Lexer.lexer import *
-from Formatter.config import *
 from Lexer.patterns import *
 import os
+import json
 
 
 class Formatter:
@@ -12,75 +12,76 @@ class Formatter:
                                           "using", "volatile", "typedef", "class", "struct", "enum", "case", "typename")
         self.log_file_name = "log.log"
         self.need_indent = False
-        self.config_file_path = "Formatter/config.py"
+        self.config_file_path = "config.json"
+        self.c = self.configure_formatter(self.config_file_path)
 
     def is_space_before_parenthesis(self, keyword):
         if keyword == "if":
-            return if_parenthesis
+            return True if self.c["if_parenthesis"] == 1 else False
         if keyword == "for":
-            return for_parenthesis
+            return True if self.c["for_parenthesis"] == 1 else False
         if keyword == "while":
-            return while_parenthesis
+            return True if self.c["while_parenthesis"] == 1 else False
         if keyword == "switch":
-            return switch_parenthesis
+            return True if self.c["switch_parenthesis"] == 1 else False
         if keyword == "catch":
-            return catch_parenthesis
+            return True if self.c["catch_parenthesis"] == 1 else False
         if keyword == "identifier":
-            return func_decl_parenthesis
+            return True if self.c["func_decl_parenthesis"] == 1 else False
         return False
 
     def is_space_before_curly_open_brace(self, keyword):
         if keyword in ("class", "struct"):
-            return before_class_struct_left_brace
+            return True if self.c["before_class_struct_left_brace"] == 1 else False
         if keyword == "namespace":
-            return before_ns_left_brace
+            return True if self.c["before_ns_left_brace"] == 1 else False
         if keyword == "if":
-            return before_if_left_brace
+            return True if self.c["before_if_left_brace"] == 1 else False
         if keyword == "else":
-            return before_else_left_brace
+            return True if self.c["before_else_left_brace"] == 1 else False
         if keyword == "for":
-            return before_for_left_brace
+            return True if self.c["before_for_left_brace"] == 1 else False
         if keyword == "while":
-            return before_while_left_brace
+            return True if self.c["before_while_left_brace"] == 1 else False
         if keyword == "do":
-            return before_do_left_brace
+            return True if self.c["before_do_left_brace"] == 1 else False
         if keyword == "switch":
-            return before_switch_left_brace
+            return True if self.c["before_switch_left_brace"] == 1 else False
         if keyword == "try":
-            return before_try_left_brace
+            return True if self.c["before_try_left_brace"] == 1 else False
         if keyword == "catch":
-            return before_catch_left_brace
+            return True if self.c["before_catch_left_brace"] == 1 else False
         return False
 
     def is_space_before_keyword(self, keyword):
         if keyword == "else":
-            return before_else
+            return True if self.c["before_else"] == 1 else False
         if keyword == "catch":
-            return before_catch
+            return True if self.c["before_catch"] == 1 else False
         return False
 
     def add_spaces_around_operator(self, operator):
         if operator in ("=", "+=", "-=", "/=", "*=", "^=", "&=", "^=", "<<=", ">>=", "%="):
-            return ' ' + operator + ' ' if around_assignment_op else operator
+            return ' ' + operator + ' ' if self.c["around_assignment_op"] == 1 else operator
         if operator in ("&&", "||"):
-            return ' ' + operator + ' ' if around_logical_op else operator
+            return ' ' + operator + ' ' if self.c["around_logical_op"] == 1 else operator
         if operator in ("==", "!="):
-            return ' ' + operator + ' ' if around_equality_op else operator
+            return ' ' + operator + ' ' if self.c["around_equality_op"] == 1 else operator
         if operator in ("<", "<=", ">", ">=", "!=", "<=>"):
-            return ' ' + operator + ' ' if around_relational_op else operator
+            return ' ' + operator + ' ' if self.c["around_relational_op"] == 1 else operator
         if operator in ("&", "^", "|"):
-            return ' ' + operator + ' ' if around_bitwise_op else operator
+            return ' ' + operator + ' ' if self.c["around_bitwise_op"] == 1 else operator
         if operator in ("+", "-"):
-            return ' ' + operator + ' ' if around_additive_op else operator
+            return ' ' + operator + ' ' if self.c["around_additive_op"] == 1 else operator
         if operator in (">>", "<<"):
-            return ' ' + operator + ' ' if around_shift_op else operator
+            return ' ' + operator + ' ' if self.c["around_shift_op"] == 1 else operator
         if operator in (".", "->", "->*", ".*"):
-            return ' ' + operator + ' ' if around_pointer_to_member_op else operator
+            return ' ' + operator + ' ' if self.c["around_pointer_to_member_op"] == 1 else operator
         return operator
 
     def add_indent(self, indent_level, output, after=False):
         if self.need_indent:
-            indent = ' ' * indent_len * indent_level
+            indent = ' ' * self.c["indent_len"] * indent_level
             output = (output + indent if after else indent + output)
         return output
 
@@ -137,7 +138,7 @@ class Formatter:
             elif cur_token.token_name == TokenName.BRACKET:
                 if cur_token.value == '{':
                     if len(token_stack) > 0 and token_stack[-1] == "identifier":  # initialization
-                        cur_output = ' {' if before_init_list_left_brace else '{'
+                        cur_output = ' {' if self.c["before_init_list_left_brace"] == 1 else '{'
                         if last_keyword != '':
                             cur_output = cur_output + '\n'
                             self.need_indent = True
@@ -184,7 +185,7 @@ class Formatter:
                             pass
                         else:
                             token_stack.pop()
-                            cur_output = cur_output + '\n' + (' ' * indent_len * (indent_level + 1))
+                            cur_output = cur_output + '\n' + (' ' * self.c["indent_len"] * (indent_level + 1))
                     self.need_indent = False
                 else:
                     cur_output = cur_token.value
@@ -201,8 +202,8 @@ class Formatter:
                 elif cur_token.value == ':':
                     if len(token_stack) > 0 and token_stack[-1] == '?':
                         token_stack.pop()
-                        cur_output = ' :' if before_colon_ternary else ':'
-                        cur_output = cur_output + (' ' if after_colon_ternary else '')
+                        cur_output = ' :' if self.c["before_colon_ternary"] == 1 else ':'
+                        cur_output = cur_output + (' ' if self.c["after_colon_ternary"] == 1 else '')
                     elif len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:
                         token_stack.pop()
                         cur_output = ":\n"
@@ -225,11 +226,11 @@ class Formatter:
                     cur_output = ('<' if cur_token.value == '<' else '>')
                 elif cur_token.value == '<' and len(token_stack) > 0 and token_stack[-1] == "template":
                     token_stack.append('<')
-                    cur_output = " <" if before_template_declaration else '<'
-                    cur_output = cur_output + (' ' if within_template_declaration else '')
+                    cur_output = " <" if self.c["before_template_declaration"] == 1 else '<'
+                    cur_output = cur_output + (' ' if self.c["within_template_declaration"] == 1 else '')
                 elif cur_token.value == '>' and len(token_stack) > 0 and token_stack[-1] == '<':
                     token_stack.pop()  # < pop
-                    cur_output = " >" if within_template_declaration else '>'
+                    cur_output = " >" if self.c["within_template_declaration"] == 1 else '>'
                     if len(token_stack) > 0 and token_stack[-1] == 'template':
                         cur_output = cur_output + '\n'
                         token_stack.pop()  # template pop
@@ -238,15 +239,14 @@ class Formatter:
                     cur_output = '<'
                 else:
                     cur_output = self.add_spaces_around_operator(cur_token.value)
-                    #cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
             elif cur_token.token_name == TokenName.TERNARY_OPERATOR:
                 token_stack.append('?')
-                cur_output = ' ?' if before_ternary else '?'
-                cur_output = cur_output + (' ' if after_ternary else '')
+                cur_output = ' ?' if self.c["before_ternary"] == 1 else '?'
+                cur_output = cur_output + (' ' if self.c["after_ternary"] == 1 else '')
             elif cur_token.token_name == TokenName.ACCESS_MODIFIER:
                 if (i + 1 < len(tokens) and tokens[i + 1].token_name == TokenName.IDENTIFIER) or \
                         (i + 2 < len(tokens) and tokens[i + 1].token_name == TokenName.WHITESPACE and tokens[
@@ -309,9 +309,6 @@ class Formatter:
         with open(file_path, 'w') as file:
             file.write(formatted_code)
 
-    def set_config_path(self, config_file_path):
-        self.config_file_path = config_file_path
-
     def show_help(self):
         with open("Readme.md", 'r', encoding="utf-8") as file:
             print(file.read())
@@ -343,3 +340,12 @@ class Formatter:
             if token.token_name not in (TokenName.WHITESPACE, TokenName.NEW_LINE):
                 new_tokens.append(token)
         return new_tokens
+
+    def configure_formatter(self, config_file_path):
+        self.config_file_path = config_file_path
+        with open(config_file_path, 'r', encoding="utf-8") as file:
+            config = file.read()
+            self.c = json.loads(config)
+        return self.c
+
+

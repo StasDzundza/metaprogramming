@@ -1,0 +1,51 @@
+{
+	"indent_len": 4,
+	
+	"func_decl_parenthesis" : 0,
+	"if_parenthesis" : 1,
+	"for_parenthesis" : 1,
+	"while_parenthesis" : 1,
+	"switch_parenthesis" : 1,
+	"catch_parenthesis" : 1,
+
+	"around_assignment_op" : 1,
+	"around_logical_op" : 1,
+	"around_equality_op" : 1,
+	"around_relational_op" : 1,
+	"around_bitwise_op" : 1,
+	"around_additive_op" : 1,
+	"around_multiplicative_op" : 1,
+	"around_shift_op" : 1,
+	"around_unary_op" : 1,
+	"around_pointer_to_member_op" : 0,
+
+	"before_ns_left_brace" : 0,
+	"before_init_list_left_brace" : 0,
+	"before_class_struct_left_brace" : 1,
+	"before_function_left_brace" : 1,
+	"before_if_left_brace" : 1,
+	"before_else_left_brace" : 1,
+	"before_for_left_brace" : 1,
+	"before_while_left_brace" : 1,
+	"before_do_left_brace" : 1,
+	"before_switch_left_brace" : 1,
+	"before_try_left_brace" : 1,
+	"before_catch_left_brace" : 1,
+
+	"before_else" : 1,
+	"before_while" : 1,
+	"before_catch" : 1,
+
+	"before_ternary" : 1,
+	"before_colon_ternary" : 1,
+	"after_colon_ternary" : 1,
+	"after_ternary" : 1,
+
+	"before_template_declaration" : 1,
+	"within_template_declaration" : 0,
+	"within_empty_template_declaration" : 0,
+
+	"before_template_instantiation" : 0,
+	"within_template_instantiation" : 0,
+	"within_empty_template_instantiation" : 0
+}
