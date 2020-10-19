@@ -65,3 +65,8 @@ default:int c = a;
 template<typename K, class V = list<K> >
 class hash {
 };
+
+struct fooS {
+int i:4;
+char j;
+}foo_t;

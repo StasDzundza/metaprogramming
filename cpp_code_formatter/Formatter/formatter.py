@@ -115,6 +115,8 @@ class Formatter:
                 elif cur_token.value in ("else", "catch"):
                     cur_output = ' ' + cur_token.value if self.is_space_before_keyword(
                         cur_token.value) else cur_token.value
+                elif cur_token.value == "operator":
+                    cur_output = "operator " if self.c["between_operator_keyword_and_punctuation"] == 1 else "operator"
                 else:
                     cur_output = cur_token.value
                 if cur_token.value in ("case", "default"):
@@ -195,7 +197,8 @@ class Formatter:
             elif cur_token.token_name == TokenName.SEPARATOR:
                 if cur_token.value == ';':
                     if len(token_stack) > 0 and token_stack[-1] == "for":
-                        cur_output = ';'  # TODO check for spaces near ;
+                        cur_output = ' ;' if self.c["before_for_semicolon"] == 1 else ';'
+                        cur_output = cur_output + ' ' if self.c["after_for_semicolon"] == 1 else ''
                     else:
                         last_keyword = ''
                         cur_output = ';\n'
@@ -215,7 +218,11 @@ class Formatter:
                         indent_level += 1
                         self.need_indent = True
                     else:
-                        cur_output = cur_token.value
+                        cur_output = ' :' if self.c["before_colon_in_bit_field"] == 1 else ':'
+                        cur_output = cur_output + (' ' if self.c["after_colon_in_bit_field"] == 1 else '')
+                elif cur_token.value == ',':
+                    cur_output = ' ,' if self.c["before_coma"] == 1 else ','
+                    cur_output = cur_output + ' ' if self.c["after_coma"] == 1 else ''
                 else:
                     cur_output = cur_token.value
             elif cur_token.token_name == TokenName.DATA_TYPE:
@@ -232,6 +239,9 @@ class Formatter:
                 elif cur_token.value == '>' and len(token_stack) > 0 and token_stack[-1] == '<':
                     token_stack.pop()  # < pop
                     cur_output = " >" if self.c["within_template_declaration"] == 1 else '>'
+                    if self.c["within_template_declaration"] == 0 and self.c["prevent_concatenation_in_template"] == 1 and \
+                            output[len(output) - 1] == '>':
+                        cur_output = ' ' + cur_output
                     if len(token_stack) > 0 and token_stack[-1] == 'template':
                         cur_output = cur_output + '\n'
                         token_stack.pop()  # template pop
@@ -245,7 +255,7 @@ class Formatter:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
                 self.need_indent = True
-                cur_output = self.add_indent(self.c["preprocessor_directive_indent"] / self.c["indent_len"], cur_output)
+                cur_output = self.add_indent(self.c["preprocessor_directive_indent"], cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.TERNARY_OPERATOR:
                 token_stack.append('?')
