@@ -14,6 +14,7 @@ class Formatter:
         self.need_indent = False
         self.config_file_path = "config.json"
         self.c = self.configure_formatter(self.config_file_path)
+        self.indent_length = self.c["indent_len"]
 
     def is_space_before_parenthesis(self, keyword):
         if keyword == "if":
@@ -81,7 +82,7 @@ class Formatter:
 
     def add_indent(self, indent_level, output, after=False):
         if self.need_indent:
-            indent = ' ' * self.c["indent_len"]\
+            indent = ' ' * self.indent_length\
                      * indent_level
             output = (output + indent if after else indent + output)
         return output
@@ -106,17 +107,25 @@ class Formatter:
         indent_level = 0
         last_keyword = ''
         first_case = True
+        need_dedent = True
         with open(path_to_code, 'r', encoding="utf-8") as file:
             tokens = lexer.tokenize(file.read())
+        tokens = self.remove_whitespace_tokens(tokens)
         for i in range(0, len(tokens)):
             cur_token = tokens[i]
             cur_output = ""
             if cur_token.token_name == TokenName.KEYWORD:
                 last_keyword = cur_token.value
-                if cur_token.value in ("class", "struct", "enum", "template"):
+                if cur_token.value in ("class", "struct", "namespace", "enum", "template"):
                     token_stack.append(cur_token.value)
                     if cur_token.value == "class" and "template" in token_stack:
                         token_stack.pop()  # if class instead typename in template
+                    elif cur_token.value == "class":
+                        self.indent_length = self.c["indent_member_of_classes"]
+                    elif cur_token.value == "struct":
+                        self.indent_length = self.c["indent_member_of_plain_structures"]
+                    elif cur_token.value == "namespace":
+                        self.indent_length = self.c["indent_member_of_namespace"]
                 if cur_token.value in self.KEYWORDS_WITH_PARENTHESIS:
                     token_stack.append(cur_token.value)
                     cur_output = (
@@ -142,9 +151,9 @@ class Formatter:
                 self.need_indent = False
             elif cur_token.token_name == TokenName.IDENTIFIER:
                 if (i + 1 < len(tokens) and tokens[i + 1].value in ('(', '{')) or \
-                        (i + 2 < len(tokens) and tokens[i + 1].token_name == TokenName.WHITESPACE and tokens[
-                            i + 2].value in ('(', '{')):
-                    token_stack.append("identifier")
+                        (i + 2 < len(tokens) and tokens[i + 1].token_name == TokenName.WHITESPACE and tokens[i + 2].value in ('(', '{')):
+                    if len(token_stack) > 0 and token_stack[-1] not in KEYWORDS:
+                        token_stack.append("identifier")
                     cur_output = (
                         cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
                 else:
@@ -162,6 +171,9 @@ class Formatter:
                             indent_level += 1
                             last_keyword = ''
                             token_stack.pop()  # remove unnecessary identifier
+                    elif tokens[i - 1].value in (']', '='):
+                        cur_output = '{'
+                        need_dedent = False
                     else:
                         cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n"
                         last_keyword = ''
@@ -171,7 +183,10 @@ class Formatter:
                     token_stack.append('{')
                 elif cur_token.value == '}':
                     if indent_level > 0 and ((len(token_stack) > 1 and token_stack[-2] != "identifier") or len(token_stack) == 1):
-                        indent_level -= 1
+                        if need_dedent:
+                            indent_level -= 1
+                        else:
+                            need_dedent = True
                     if (i + 1 < len(tokens) and tokens[i + 1].value in ("else", "catch", ";")) or \
                             (i + 2 < len(tokens) and tokens[i + 2].value in ("else", "catch", ";")):
                         cur_output = "}"
@@ -190,6 +205,8 @@ class Formatter:
                         if len(token_stack) > 0 and (token_stack[-1] in KEYWORDS or token_stack[-1] == "identifier"):
                             if token_stack[-1] == "identifier":
                                 self.need_indent = False
+                            if token_stack[-1] in ("class", "struct", "namespace"):
+                                self.indent_length = self.c["indent_len"]
                             token_stack.pop()  # remove keyword like: identifier if for class ...
                 elif cur_token.value == ')':
                     cur_output = ' )' if self.is_space_within_parenthesis(last_keyword) else ')'
@@ -202,7 +219,7 @@ class Formatter:
                             pass
                         else:
                             token_stack.pop()
-                            cur_output = cur_output + '\n' + (' ' * self.c["indent_len"] * (indent_level + 1))
+                            cur_output = cur_output + '\n' + (' ' * self.indent_length * (indent_level + 1))
                     self.need_indent = False
                 elif cur_token.value == '(':
                     cur_output = '( ' if self.is_space_within_parenthesis(last_keyword) else '('
@@ -278,8 +295,6 @@ class Formatter:
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
-                self.need_indent = True
-                cur_output = self.add_indent(self.c["preprocessor_directive_indent"], cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.TERNARY_OPERATOR:
                 token_stack.append('?')
@@ -292,7 +307,11 @@ class Formatter:
                     cur_output = cur_token.value + ' '
                 else:
                     token_stack.append(cur_token.value)
-                    cur_output = cur_token.value
+                    cur_output = (' ' * self.c["indent_visibility_keywords"]) + cur_token.value
+            elif cur_token.token_name == TokenName.PREPROCESSOR:
+                cur_output = '#'
+                cur_output = (' ' * self.c["preprocessor_directive_indent"]) + cur_output
+                self.need_indent = False
             elif cur_token.token_name == TokenName.WHITESPACE:
                 pass
             elif cur_token.token_name == TokenName.NEW_LINE:
@@ -372,7 +391,9 @@ class Formatter:
         formatted_code = self.format_file(file_path)
         formatted_tokens = lexer2.tokenize(formatted_code)
         not_formatted_tokens = self.remove_whitespace_tokens(not_formatted_tokens)
+        not_formatted_tokens = self.remove_end_line_tokens(not_formatted_tokens)
         formatted_tokens = self.remove_whitespace_tokens(formatted_tokens)
+        formatted_tokens = self.remove_end_line_tokens(formatted_tokens)
         for i in range(0, len(formatted_tokens) - 1):
             cur_log = ''
             if not_formatted_tokens[i].line != formatted_tokens[i].line or not_formatted_tokens[i].column != formatted_tokens[i].column:
@@ -387,7 +408,14 @@ class Formatter:
     def remove_whitespace_tokens(self, tokens):
         new_tokens = []
         for token in tokens:
-            if token.token_name not in (TokenName.WHITESPACE, TokenName.NEW_LINE):
+            if token.token_name != TokenName.WHITESPACE:
+                new_tokens.append(token)
+        return new_tokens
+
+    def remove_end_line_tokens(self, tokens):
+        new_tokens = []
+        for token in tokens:
+            if token.token_name != TokenName.NEW_LINE:
                 new_tokens.append(token)
         return new_tokens
 
@@ -401,7 +429,9 @@ class Formatter:
     def verify(self, old_tokens, new_tokens):
         logs = ""
         old_tokens = self.remove_whitespace_tokens(old_tokens)
+        old_tokens = self.remove_end_line_tokens(old_tokens)
         new_tokens = self.remove_whitespace_tokens(new_tokens)
+        new_tokens = self.remove_end_line_tokens(new_tokens)
         for i in range(0, len(new_tokens) - 1):
             cur_log = ''
             if old_tokens[i].line != new_tokens[i].line or old_tokens[i].column != new_tokens[i].column:

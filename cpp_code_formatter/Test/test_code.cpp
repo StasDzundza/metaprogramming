@@ -1,6 +1,7 @@
 #                      include                       <stdio.h>
 #define min(a, b)  ((a) < (b) ? (a) : (b))
 #include "some_lib.h"
+struct s{int k[3]={1,3,4};int c[]{1};};
 void foo(int a){a*=3;}
 namespace            MyNamespace                   {int c = 9;double _p = min(5,7);}
 int            main     (){
@@ -13,7 +14,7 @@ bool b=true;
 x =(b)?1:0;
 
 
-for (int var2 = Float(sdf, 4523);var2 >
+for (int var2 = a[3];var2 >
 
 
 234;++var2, --var5)                           {
@@ -54,19 +55,9 @@ class NotMyClass: public MyClass{
 NotMyClass():a{6}, b{7} {}
 private:int a;int b;};
 
-switch(a){case 1: int b = a;break;case 2:int b = a;switch(b){case 1: int b = a;break;case 2:int b = a;int c = b;
-break;
-default:int c = a;
-}int c = b;
+switch(a){case 1: int b = a;break;case 2:int b = a;int c = b;
 break;
 default:int c = a;
 }
 
-template<typename K, class V = list<K> >
-class hash {
-};
-
-struct fooS {
-int i:4;
-char j[3];
-}foo_t;
+FooT() : elems{{-1, {'c', 'p', 'p'}}, {1,  {'j', 'b'}}}, vector{1f, 2f, 3f} {} FooT operator++(int) volatile { return *this; } auto f(T t) -> decltype(t + g()) { return t + g(); } };

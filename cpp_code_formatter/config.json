@@ -4,7 +4,7 @@
 	"indent_member_of_classes": 4,
 	"indent_member_of_plain_structures": 4,
 	"indent_member_of_namespace": 4,
-	"indent_visibility_keywords": 0,
+	"indent_visibility_keywords": 1,
 	"preprocessor_directive_indent": 0,
 
 	"func_decl_parenthesis" : 0,
@@ -27,7 +27,7 @@
 	"around_arrow_in_return_type": 0,
 	"around_pointer_to_member_op" : 0,
 
-	"before_ns_left_brace" : 0,
+	"before_ns_left_brace" : 1,
 	"before_init_list_left_brace" : 0,
 	"before_class_struct_left_brace" : 1,
 	"before_function_left_brace" : 1,
@@ -74,8 +74,8 @@
 	"between_operator_keyword_and_punctuation": 1,
 
 	"before_template_declaration" : 1,
-	"within_template_declaration" : 0,
-	"within_empty_template_declaration" : 0,
+	"within_template_declaration" : 1,
+	"within_empty_template_declaration" : 1,
 
 	"before_template_instantiation" : 0,
 	"within_template_instantiation" : 0,
