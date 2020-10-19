@@ -81,7 +81,8 @@ class Formatter:
 
     def add_indent(self, indent_level, output, after=False):
         if self.need_indent:
-            indent = ' ' * self.c["indent_len"] * indent_level
+            indent = ' ' * self.c["indent_len"]\
+                     * indent_level
             output = (output + indent if after else indent + output)
         return output
 
@@ -243,6 +244,9 @@ class Formatter:
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
+                self.need_indent = True
+                cur_output = self.add_indent(self.c["preprocessor_directive_indent"] / self.c["indent_len"], cur_output)
+                self.need_indent = False
             elif cur_token.token_name == TokenName.TERNARY_OPERATOR:
                 token_stack.append('?')
                 cur_output = ' ?' if self.c["before_ternary"] == 1 else '?'

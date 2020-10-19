@@ -1,7 +1,14 @@
 {
 	"indent_len": 4,
-	
+	"label_indent": 0,
+	"indent_member_of_classes": 4,
+	"indent_member_of_plain_structures": 4,
+	"indent_member_of_namespace": 4,
+	"indent_visibility_keywords": 0,
+	"preprocessor_directive_indent": 0,
+
 	"func_decl_parenthesis" : 0,
+	"func_call_parenthesis" : 0,
 	"if_parenthesis" : 1,
 	"for_parenthesis" : 1,
 	"while_parenthesis" : 1,
@@ -17,6 +24,7 @@
 	"around_multiplicative_op" : 1,
 	"around_shift_op" : 1,
 	"around_unary_op" : 1,
+	"around_arrow_in_return_type": 0,
 	"around_pointer_to_member_op" : 0,
 
 	"before_ns_left_brace" : 0,
