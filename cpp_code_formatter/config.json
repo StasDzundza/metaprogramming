@@ -49,6 +49,17 @@
 	"after_colon_ternary" : 1,
 	"after_ternary" : 1,
 
+	"within_code_braces": 0,
+	"within_empty_code_braces": 0,
+	"within_array_brackets": 0,
+	"within_initializer_list_braces": 1,
+	"within_if": 1,
+	"within_for": 0,
+	"within_while": 0,
+	"within_switch": 0,
+	"within_catch": 0,
+	"within_func_decl": 0,
+
 	"before_coma": 0,
 	"after_coma": 1,
 	"before_for_semicolon": 0,

@@ -86,6 +86,19 @@ class Formatter:
             output = (output + indent if after else indent + output)
         return output
 
+    def is_space_within_parenthesis(self, keyword):
+        if keyword == "for":
+            return True if self.c["within_for"] == 1 else False
+        if keyword == "if":
+            return True if self.c["within_if"] == 1 else False
+        if keyword == "switch":
+            return True if self.c["within_switch"] == 1 else False
+        if keyword == "catch":
+            return True if self.c["within_catch"] == 1 else False
+        if keyword == "while":
+            return True if self.c["within_while"] == 1 else False
+        return False
+
     def format_file(self, path_to_code):
         token_stack = []
         output = ""
@@ -142,6 +155,7 @@ class Formatter:
                 if cur_token.value == '{':
                     if len(token_stack) > 0 and token_stack[-1] == "identifier":  # initialization
                         cur_output = ' {' if self.c["before_init_list_left_brace"] == 1 else '{'
+                        cur_output = cur_output + (' ' if self.c["within_initializer_list_braces"] == 1 else '')
                         if last_keyword != '':
                             cur_output = cur_output + '\n'
                             self.need_indent = True
@@ -163,7 +177,7 @@ class Formatter:
                         cur_output = "}"
                     else:
                         if len(token_stack) > 1 and token_stack[-2] == "identifier":
-                            cur_output = "}"
+                            cur_output = ' }' if self.c["within_initializer_list_braces"] == 1 else '}'
                             self.need_indent = False
                         else:
                             cur_output = "}\n"
@@ -178,7 +192,7 @@ class Formatter:
                                 self.need_indent = False
                             token_stack.pop()  # remove keyword like: identifier if for class ...
                 elif cur_token.value == ')':
-                    cur_output = ')'
+                    cur_output = ' )' if self.is_space_within_parenthesis(last_keyword) else ')'
                     if len(token_stack) > 0 and token_stack[-1] == "identifier":
                         token_stack.pop()
                     elif len(token_stack) > 0 and token_stack[-1] in self.KEYWORDS_WITH_PARENTHESIS:
@@ -190,6 +204,14 @@ class Formatter:
                             token_stack.pop()
                             cur_output = cur_output + '\n' + (' ' * self.c["indent_len"] * (indent_level + 1))
                     self.need_indent = False
+                elif cur_token.value == '(':
+                    cur_output = '( ' if self.is_space_within_parenthesis(last_keyword) else '('
+                    cur_output = self.add_indent(indent_level, cur_output)
+                    self.need_indent = False
+                elif cur_token.value == '[':
+                    cur_output = '[ ' if self.c["within_array_brackets"] == 1 else '['
+                elif cur_token.value == ']':
+                    cur_output = ' ]' if self.c["within_array_brackets"] == 1 else ']'
                 else:
                     cur_output = cur_token.value
                     cur_output = self.add_indent(indent_level, cur_output)

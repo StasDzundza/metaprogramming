@@ -68,5 +68,5 @@ class hash {
 
 struct fooS {
 int i:4;
-char j;
+char j[3];
 }foo_t;
