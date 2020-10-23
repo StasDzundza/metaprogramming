@@ -27,8 +27,6 @@ class Formatter:
             return True if self.c["switch_parenthesis"] == 1 else False
         if keyword == "catch":
             return True if self.c["catch_parenthesis"] == 1 else False
-        if keyword == "identifier":
-            return True if self.c["func_decl_parenthesis"] == 1 else False
         return False
 
     def is_space_before_curly_open_brace(self, keyword):
@@ -107,7 +105,12 @@ class Formatter:
         indent_level = 0
         last_keyword = ''
         first_case = True
-        need_dedent = True
+        is_empty_template_declaration = False
+        is_empty_template_instantiation = False
+        is_template_instantiation = False
+        is_func_declaration = False
+        is_special = False
+        init_list_brace_count = 0
         with open(path_to_code, 'r', encoding="utf-8") as file:
             tokens = lexer.tokenize(file.read())
         tokens = self.remove_whitespace_tokens(tokens)
@@ -121,10 +124,13 @@ class Formatter:
                     if cur_token.value == "class" and "template" in token_stack:
                         token_stack.pop()  # if class instead typename in template
                     elif cur_token.value == "class":
+                        is_special = True
                         self.indent_length = self.c["indent_member_of_classes"]
                     elif cur_token.value == "struct":
+                        is_special = True
                         self.indent_length = self.c["indent_member_of_plain_structures"]
                     elif cur_token.value == "namespace":
+                        is_special = True
                         self.indent_length = self.c["indent_member_of_namespace"]
                 if cur_token.value in self.KEYWORDS_WITH_PARENTHESIS:
                     token_stack.append(cur_token.value)
@@ -150,49 +156,68 @@ class Formatter:
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.IDENTIFIER:
-                if (i + 1 < len(tokens) and tokens[i + 1].value in ('(', '{')) or \
-                        (i + 2 < len(tokens) and tokens[i + 1].token_name == TokenName.WHITESPACE and tokens[i + 2].value in ('(', '{')):
+                if i + 1 < len(tokens) and tokens[i + 1].value == '{':  # initialization
                     if len(token_stack) > 0 and token_stack[-1] not in KEYWORDS:
-                        token_stack.append("identifier")
-                    cur_output = (
-                        cur_token.value + ' ' if self.is_space_before_parenthesis("identifier") else cur_token.value)
+                        token_stack.append("identifier")  # FIXME
+                    cur_output = cur_token.value
+                elif (i+1 < len(tokens) and tokens[i+1].value == '(') or (i+2 < len(tokens) and tokens[i+1].token_name == TokenName.NEW_LINE and tokens[i+2].value == '('):  # func decl or call
+                    if i == 0 or (i-1 >= 0 and tokens[i-1].token_name in (TokenName.OPERATOR, TokenName.NEW_LINE, TokenName.KEYWORD, TokenName.BRACKET, TokenName.SEPARATOR)):
+                        if i <= 1 or (i-2 >= 0 and tokens[i-2].value != "operator"):  # call
+                            cur_output = cur_token.value + (' ' if self.c["func_call_parenthesis"] == 1 else '')
+                        else:  # decl
+                            cur_output = cur_token.value + (' ' if self.c["func_decl_parenthesis"] == 1 else '')
+                            is_func_declaration = True
+                    elif i-1 >= 0 and tokens[i-1].token_name == TokenName.PREPROCESSOR_DIRECTIVE:
+                        cur_output = cur_token.value
+                    else:
+                        cur_output = cur_token.value + (' ' if self.c["func_decl_parenthesis"] == 1 else '')
+                        is_func_declaration = True
                 else:
                     cur_output = cur_token.value
+                    if i+1 < len(tokens) and tokens[i+1].token_name in (TokenName.IDENTIFIER, TokenName.KEYWORD):
+                        cur_output = cur_output + ' '
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.BRACKET:
                 if cur_token.value == '{':
-                    if len(token_stack) > 0 and token_stack[-1] == "identifier":  # initialization
-                        cur_output = ' {' if self.c["before_init_list_left_brace"] == 1 else '{'
+                    if i-1 >= 0 and (tokens[i-1].value in (']', '=') or tokens[i-1].token_name == TokenName.IDENTIFIER) and is_special == False:  # initialization {}
+                        init_list_brace_count += 1
+                        if len(output) > 0 and output[-1] == ' ':
+                            cur_output = '{'
+                        else:
+                            cur_output = ' {' if self.c["before_init_list_left_brace"] == 1 else '{'
                         cur_output = cur_output + (' ' if self.c["within_initializer_list_braces"] == 1 else '')
-                        if last_keyword != '':
-                            cur_output = cur_output + '\n'
+                        last_keyword = ''
+                    else:
+                        if is_func_declaration:
+                            is_func_declaration = False
+                            cur_output = " {\n" if self.c["before_function_left_brace"] == 1 else "{\n"
                             self.need_indent = True
                             indent_level += 1
-                            last_keyword = ''
-                            token_stack.pop()  # remove unnecessary identifier
-                    elif tokens[i - 1].value in (']', '='):
-                        cur_output = '{'
-                        need_dedent = False
-                    else:
-                        cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n"
-                        last_keyword = ''
-                        cur_output = self.add_indent(indent_level, cur_output)
-                        self.need_indent = True
-                        indent_level += 1
-                    token_stack.append('{')
-                elif cur_token.value == '}':
-                    if indent_level > 0 and ((len(token_stack) > 1 and token_stack[-2] != "identifier") or len(token_stack) == 1):
-                        if need_dedent:
-                            indent_level -= 1
                         else:
-                            need_dedent = True
-                    if (i + 1 < len(tokens) and tokens[i + 1].value in ("else", "catch", ";")) or \
-                            (i + 2 < len(tokens) and tokens[i + 2].value in ("else", "catch", ";")):
+                            if init_list_brace_count != 0:  # initialization {}
+                                init_list_brace_count += 1
+                                cur_output = "{"
+                            else:
+                                cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n"
+                                last_keyword = ''
+                                cur_output = self.add_indent(indent_level, cur_output)
+                                self.need_indent = True
+                                indent_level += 1
+                    token_stack.append('{')
+                    if is_special:
+                        is_special = False
+                elif cur_token.value == '}':
+                    if init_list_brace_count == 0:
+                        indent_level -= 1
+                    if (i + 1 < len(tokens) and tokens[i + 1].value in ("else", "catch", ";") and init_list_brace_count == 0):
                         cur_output = "}"
                     else:
-                        if len(token_stack) > 1 and token_stack[-2] == "identifier":
-                            cur_output = ' }' if self.c["within_initializer_list_braces"] == 1 else '}'
+                        if init_list_brace_count != 0:
+                            if init_list_brace_count == 1:  # last brace
+                                cur_output = ' }' if self.c["within_initializer_list_braces"] == 1 else '}'
+                            else:
+                                cur_output = '}'
                             self.need_indent = False
                         else:
                             cur_output = "}\n"
@@ -202,14 +227,20 @@ class Formatter:
                     self.need_indent = True
                     if len(token_stack) > 0:
                         token_stack.pop()  # remove { from stack
-                        if len(token_stack) > 0 and (token_stack[-1] in KEYWORDS or token_stack[-1] == "identifier"):
-                            if token_stack[-1] == "identifier":
+                        if len(token_stack) > 0 and (token_stack[-1] in KEYWORDS or init_list_brace_count != 0):
+                            if init_list_brace_count != 0:
+                                init_list_brace_count -= 1
                                 self.need_indent = False
-                            if token_stack[-1] in ("class", "struct", "namespace"):
+                                if len(token_stack) > 0 and token_stack[-1] == "identifier":
+                                    token_stack.pop
+                            elif len(token_stack) > 0 and token_stack[-1] in KEYWORDS:
                                 self.indent_length = self.c["indent_len"]
-                            token_stack.pop()  # remove keyword like: identifier if for class ...
+                                token_stack.pop()  # remove keyword like: identifier if for class ...
                 elif cur_token.value == ')':
-                    cur_output = ' )' if self.is_space_within_parenthesis(last_keyword) else ')'
+                    if is_func_declaration:
+                        cur_output = ' )' if self.c["within_func_decl"] == 1 else ')'
+                    else:
+                        cur_output = ' )' if self.is_space_within_parenthesis(last_keyword) else ')'
                     if len(token_stack) > 0 and token_stack[-1] == "identifier":
                         token_stack.pop()
                     elif len(token_stack) > 0 and token_stack[-1] in self.KEYWORDS_WITH_PARENTHESIS:
@@ -222,8 +253,11 @@ class Formatter:
                             cur_output = cur_output + '\n' + (' ' * self.indent_length * (indent_level + 1))
                     self.need_indent = False
                 elif cur_token.value == '(':
-                    cur_output = '( ' if self.is_space_within_parenthesis(last_keyword) else '('
-                    cur_output = self.add_indent(indent_level, cur_output)
+                    if is_func_declaration:
+                        cur_output = '( ' if self.c["within_func_decl"] == 1 else '('
+                    else:
+                        cur_output = '( ' if self.is_space_within_parenthesis(last_keyword) else '('
+                        cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = False
                 elif cur_token.value == '[':
                     cur_output = '[ ' if self.c["within_array_brackets"] == 1 else '['
@@ -265,33 +299,75 @@ class Formatter:
                 else:
                     cur_output = cur_token.value
             elif cur_token.token_name == TokenName.DATA_TYPE:
-                cur_output = cur_token.value + ' '
+                if is_template_instantiation:
+                    cur_output = cur_token.value
+                else:
+                    cur_output = cur_token.value + ' '
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.OPERATOR:
                 if len(token_stack) > 0 and token_stack[-1] == "include" and cur_token.value in ('<', '>'):
                     cur_output = ('<' if cur_token.value == '<' else '>')
-                elif cur_token.value == '<' and len(token_stack) > 0 and token_stack[-1] == "template":
+                elif cur_token.value == '<' and len(token_stack) > 0 and token_stack[-1] == "template":  # start of template decl
                     token_stack.append('<')
-                    cur_output = " <" if self.c["before_template_declaration"] == 1 else '<'
-                    cur_output = cur_output + (' ' if self.c["within_template_declaration"] == 1 else '')
-                elif cur_token.value == '>' and len(token_stack) > 0 and token_stack[-1] == '<':
+                    if i+1 < len(tokens) and tokens[i+1].value == '>':  # empty template decl:
+                        cur_output = " <" if self.c["before_template_declaration"] == 1 else '<'
+                        cur_output = cur_output + (' ' if self.c["within_empty_template_declaration"] == 1 else '')
+                        is_empty_template_declaration = True
+                    else:
+                        cur_output = " <" if self.c["before_template_declaration"] == 1 else '<'
+                        cur_output = cur_output + (' ' if self.c["within_template_declaration"] == 1 else '')
+                elif cur_token.value == '<' and (i+2 < len(tokens) and tokens[i+1].token_name in (TokenName.IDENTIFIER, TokenName.DATA_TYPE) and    # start of template instantiation
+                                                 tokens[i+2].token_name in (TokenName.SEPARATOR, TokenName.OPERATOR)):
+                    is_template_instantiation = True
+                    cur_output = ' <' if self.c["before_template_instantiation"] else '<'
+                    cur_output = cur_output + (' ' if self.c["within_template_instantiation"] else '')
+                elif cur_token.value == '>' and is_template_instantiation:
+                    is_template_instantiation = False
+                    if is_empty_template_instantiation:
+                        cur_output = '>'
+                        is_empty_template_instantiation = False
+                    else:
+                        cur_output = ' >' if self.c["within_template_instantiation"] == 1 else '>'
+                        if self.c["within_template_declaration"] == 0 and self.c["prevent_concatenation_in_template"] == 1 and \
+                                output[len(output) - 1] == '>':
+                            cur_output = ' ' + cur_output
+                elif cur_token.value == '>' and len(token_stack) > 1 and token_stack[-1] == '<' and token_stack[-2] == 'template':  # end of template decl
                     token_stack.pop()  # < pop
-                    cur_output = " >" if self.c["within_template_declaration"] == 1 else '>'
-                    if self.c["within_template_declaration"] == 0 and self.c["prevent_concatenation_in_template"] == 1 and \
-                            output[len(output) - 1] == '>':
-                        cur_output = ' ' + cur_output
-                    if len(token_stack) > 0 and token_stack[-1] == 'template':
-                        cur_output = cur_output + '\n'
+                    if is_empty_template_declaration:
+                        is_empty_template_declaration = False
                         token_stack.pop()  # template pop
-                elif cur_token.value == '<' and len(token_stack) > 0 and "template" in token_stack:
-                    token_stack.append('<')
-                    cur_output = '<'
+                        cur_output = '>\n'
+                    else:
+                        cur_output = " >" if self.c["within_template_declaration"] == 1 else '>'
+                        if self.c["within_template_declaration"] == 0 and self.c["prevent_concatenation_in_template"] == 1 and \
+                                output[len(output) - 1] == '>':
+                            cur_output = ' ' + cur_output
+                        if len(token_stack) > 0 and token_stack[-1] == 'template':
+                            cur_output = cur_output + '\n'
+                            token_stack.pop()  # template pop
+                    self.need_indent = True
+                elif cur_token.value == '<' and i+1 < len(tokens) and tokens[i+1].value == '>':  # empty template instantiation
+                    is_empty_template_instantiation = True
+                    is_template_instantiation = True
+                    cur_output = ' <' if self.c["before_template_instantiation"] else '<'
+                    cur_output = cur_output + (' ' if self.c["within_empty_template_instantiation"] else '')
                 elif cur_token.value == '!':
                     cur_output = '! ' if self.c["around_unary_op"] else '!'
+                elif cur_token.value in ("++", "--"):
+                    if i + 1 < len(tokens) and tokens[i + 1].token_name == TokenName.IDENTIFIER:
+                        cur_output = cur_token.value + (' ' if self.c["around_unary_op"] == 1 else '')
+                    elif i - 1 >= 0 and tokens[i - 1].token_name == TokenName.IDENTIFIER:
+                        cur_output = (' ' if self.c["around_unary_op"] == 1 else '') + cur_token.value
+                    else:
+                        cur_output = cur_token.value
                 else:
-                    cur_output = self.add_spaces_around_operator(cur_token.value)
-                self.need_indent = False
+                    if cur_token.value in ('+', '-') and (i+1 < len(tokens) and tokens[i+1].token_name in (TokenName.IDENTIFIER, TokenName.INT_NUMBER, TokenName.FLOAT_NUMBER)) and \
+                        (i-1 >= len(tokens) and tokens[i-1].token_name != TokenName.IDENTIFIER):
+                        cur_output = cur_token.value + (' ' if self.c["around_unary_op"] == 1 else '')
+                    else:
+                        cur_output = self.add_spaces_around_operator(cur_token.value)
+                #self.need_indent = False
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
@@ -441,4 +517,3 @@ class Formatter:
             logs = logs + cur_log
         with open(self.log_file_name, 'a', encoding="utf-8") as file:
             file.write(logs)
-

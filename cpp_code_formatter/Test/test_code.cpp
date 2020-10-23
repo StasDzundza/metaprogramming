@@ -60,4 +60,4 @@ break;
 default:int c = a;
 }
 
-FooT() : elems{{-1, {'c', 'p', 'p'}}, {1,  {'j', 'b'}}}, vector{1f, 2f, 3f} {} FooT operator++(int) volatile { return *this; } auto f(T t) -> decltype(t + g()) { return t + g(); } };
+template<class T> struct FooT { char g(); hash<int, list<char> > elems; template<int N> int foo() { return N; } template<> int foo<2>() { return Min<>(1, 5); } list<int> mem = {1, 2, 3}; float vector[3] = {}; FooT() : elems{{-1, {'c', 'p', 'p'}}, {1,  {'j', 'b'}}}, vector{1f, 2f, 3f} {} FooT operator++(int) volatile { return *this; } auto f(T t) -> decltype(t + g()) { return t + g(); } };
