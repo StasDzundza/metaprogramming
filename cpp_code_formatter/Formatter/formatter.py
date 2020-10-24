@@ -141,8 +141,18 @@ class Formatter:
                 elif cur_token.value in self.KEYWORDS_WITH_SPACE_AFTER:
                     cur_output = cur_token.value + ' '
                 elif cur_token.value in ("else", "catch"):
-                    cur_output = ' ' + cur_token.value if self.is_space_before_keyword(
-                        cur_token.value) else cur_token.value
+                    if cur_token.value == "else":
+                        if self.c["else_on_new_line"] == 1:
+                            cur_output = "else"
+                        else:
+                            cur_output = ' ' + cur_token.value if self.is_space_before_keyword(
+                                cur_token.value) else cur_token.value
+                    if cur_token.value == "catch":
+                        if self.c["catch_on_new_line"] == 1:
+                            cur_output = "catch"
+                        else:
+                            cur_output = ' ' + cur_token.value if self.is_space_before_keyword(
+                                cur_token.value) else cur_token.value
                 elif cur_token.value == "operator":
                     cur_output = "operator " if self.c["between_operator_keyword_and_punctuation"] == 1 else "operator"
                 else:
@@ -152,7 +162,8 @@ class Formatter:
                     if first_case:
                         first_case = False
                     else:
-                        indent_level -= 1
+                        if indent_level != 0:
+                            indent_level -= 1
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
             elif cur_token.token_name == TokenName.IDENTIFIER:
@@ -199,19 +210,44 @@ class Formatter:
                                 init_list_brace_count += 1
                                 cur_output = "{"
                             else:
-                                cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n"
+                                if len(token_stack) > 0 and token_stack[-1] in ("class", "struct"):
+                                    if self.c["brace_in_classes_and_structures_at_new_line"] == 1:
+                                        cur_output = "\n{\n"
+                                    else:
+                                        cur_output = " {\n" if self.is_space_before_curly_open_brace(
+                                            last_keyword) else "{\n"
+                                elif len(token_stack) > 0 and token_stack[-1] == "namespace":
+                                    if self.c["brace_in_namespaces_at_new_line"] == 1:
+                                        cur_output = "\n{\n"
+                                    else:
+                                        cur_output = " {\n" if self.is_space_before_curly_open_brace(
+                                            last_keyword) else "{\n"
+                                else:
+                                    cur_output = " {\n" if self.is_space_before_curly_open_brace(last_keyword) else "{\n"
                                 last_keyword = ''
                                 cur_output = self.add_indent(indent_level, cur_output)
-                                self.need_indent = True
-                                indent_level += 1
+                                if len(token_stack) > 0 and token_stack[-1] == "switch":
+                                    if self.c["indent_case_branches"] == 1:
+                                        self.need_indent = True
+                                        indent_level += 1
+                                    else:
+                                        self.need_indent = False
+                                else:
+                                    self.need_indent = True
+                                    indent_level += 1
                     token_stack.append('{')
                     if is_special:
                         is_special = False
                 elif cur_token.value == '}':
                     if init_list_brace_count == 0:
-                        indent_level -= 1
+                        if indent_level != 0:
+                            indent_level -= 1
                     if (i + 1 < len(tokens) and tokens[i + 1].value in ("else", "catch", ";") and init_list_brace_count == 0):
                         cur_output = "}"
+                        if tokens[i + 1].value == "else":
+                            cur_output = cur_output + ('\n' if self.c["else_on_new_line"] == 1 else '')
+                        if tokens[i + 1].value == "catch":
+                            cur_output = cur_output + ('\n' if self.c["catch_on_new_line"] == 1 else '')
                     else:
                         if init_list_brace_count != 0:
                             if init_list_brace_count == 1:  # last brace
@@ -222,7 +258,8 @@ class Formatter:
                         else:
                             cur_output = "}\n"
                     if len(token_stack) > 1 and token_stack[-2] == "switch":
-                        indent_level -= 1
+                        if indent_level != 0:
+                            indent_level -= 1
                     cur_output = self.add_indent(indent_level, cur_output)
                     self.need_indent = True
                     if len(token_stack) > 0:
@@ -232,7 +269,7 @@ class Formatter:
                                 init_list_brace_count -= 1
                                 self.need_indent = False
                                 if len(token_stack) > 0 and token_stack[-1] == "identifier":
-                                    token_stack.pop
+                                    token_stack.pop()
                             elif len(token_stack) > 0 and token_stack[-1] in KEYWORDS:
                                 self.indent_length = self.c["indent_len"]
                                 token_stack.pop()  # remove keyword like: identifier if for class ...
@@ -245,7 +282,7 @@ class Formatter:
                         token_stack.pop()
                     elif len(token_stack) > 0 and token_stack[-1] in self.KEYWORDS_WITH_PARENTHESIS:
                         if (i + 2 < len(tokens) and tokens[i + 1].token_name in (
-                        TokenName.WHITESPACE, TokenName.NEW_LINE) and tokens[i + 2].value == '{') or \
+                                TokenName.WHITESPACE, TokenName.NEW_LINE) and tokens[i + 2].value == '{') or \
                                 (i + 1 < len(tokens) and tokens[i + 1].value == '{'):
                             pass
                         else:
@@ -290,6 +327,15 @@ class Formatter:
                         cur_output = ":\n"
                         indent_level += 1
                         self.need_indent = True
+                    elif i-1 >= 0 and tokens[i-1].value == ')':  # init list
+                        if self.c["colon_on_new_line_in_init_list"] == 1:
+                            cur_output = "\n"
+                            self.need_indent = True
+                            cur_output = self.add_indent(indent_level+1, cur_output, after=True)
+                            cur_output = cur_output + ':'
+                            self.need_indent = False
+                        else:
+                            cur_output = " :"
                     else:
                         cur_output = ' :' if self.c["before_colon_in_bit_field"] == 1 else ':'
                         cur_output = cur_output + (' ' if self.c["after_colon_in_bit_field"] == 1 else '')
@@ -363,11 +409,11 @@ class Formatter:
                         cur_output = cur_token.value
                 else:
                     if cur_token.value in ('+', '-') and (i+1 < len(tokens) and tokens[i+1].token_name in (TokenName.IDENTIFIER, TokenName.INT_NUMBER, TokenName.FLOAT_NUMBER)) and \
-                        (i-1 >= len(tokens) and tokens[i-1].token_name != TokenName.IDENTIFIER):
+                            (i-1 >= len(tokens) and tokens[i-1].token_name != TokenName.IDENTIFIER):
                         cur_output = cur_token.value + (' ' if self.c["around_unary_op"] == 1 else '')
                     else:
                         cur_output = self.add_spaces_around_operator(cur_token.value)
-                #self.need_indent = False
+                # self.need_indent = False
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value + ' '
@@ -398,7 +444,6 @@ class Formatter:
                 cur_output = cur_token.value
                 cur_output = self.add_indent(indent_level, cur_output)
                 self.need_indent = False
-
             output = output + cur_output
 
         l1 = Lexer()

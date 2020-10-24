@@ -55,9 +55,9 @@ class NotMyClass: public MyClass{
 NotMyClass():a{6}, b{7} {}
 private:int a;int b;};
 
-switch(a){case 1: int b = a;break;case 2:int b = a;int c = b;
-break;
-default:int c = a;
+switch(a){case 1: int b = a;break;case 2:{int b = a;int c = b;
+break;}
+default:bool c = a;
 }
 
 template<class T> struct FooT { char g(); hash<int, list<char> > elems; template<int N> int foo() { return N; } template<> int foo<2>() { return Min<>(1, 5); } list<int> mem = {1, 2, 3}; float vector[3] = {}; FooT() : elems{{-1, {'c', 'p', 'p'}}, {1,  {'j', 'b'}}}, vector{1f, 2f, 3f} {} FooT operator++(int) volatile { return *this; } auto f(T t) -> decltype(t + g()) { return t + g(); } };

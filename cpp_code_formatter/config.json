@@ -28,7 +28,7 @@
 
 	"before_ns_left_brace" : 1,
 	"before_init_list_left_brace" : 1,
-	"before_class_struct_left_brace" : 0,
+	"before_class_struct_left_brace" : 1,
 	"before_function_left_brace" : 1,
 	"before_if_left_brace" : 1,
 	"before_else_left_brace" : 1,
@@ -73,10 +73,17 @@
 	"between_operator_keyword_and_punctuation": 0,
 
 	"before_template_declaration" : 0,
-	"within_template_declaration" : 0,
+	"within_template_declaration" : 1,
 	"within_empty_template_declaration" : 0,
 
 	"before_template_instantiation" : 0,
-	"within_template_instantiation" : 0,
-	"within_empty_template_instantiation" : 0
+	"within_template_instantiation" : 1,
+	"within_empty_template_instantiation" : 0,
+
+	"colon_on_new_line_in_init_list" : 1,
+	"brace_in_classes_and_structures_at_new_line" : 0,
+	"brace_in_namespaces_at_new_line" : 0,
+	"else_on_new_line" : 1,
+	"catch_on_new_line" : 0,
+	"indent_case_branches": 1
 }
