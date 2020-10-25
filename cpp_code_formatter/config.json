@@ -85,5 +85,11 @@
 	"brace_in_namespaces_at_new_line" : 0,
 	"else_on_new_line" : 1,
 	"catch_on_new_line" : 0,
-	"indent_case_branches": 1
+	"indent_case_branches": 1,
+
+	"num_of_blank_lines_after_include": 1,
+	"num_of_blank_lines_before_include": 1,
+	"num_of_blank_lines_before_class_structure": 1,
+	"num_of_blank_lines_after_class_structure": 1,
+	"num_of_blank_lines_before_function_def_or_decl": 0
 }

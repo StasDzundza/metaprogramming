@@ -140,6 +140,13 @@ class Formatter:
                         first_case = True
                 elif cur_token.value in self.KEYWORDS_WITH_SPACE_AFTER:
                     cur_output = cur_token.value + ' '
+                    if cur_token.value in ("class", "struct") and "template" not in token_stack:
+                        num_of_blank_lines_before = self.find_num_of_blank_lines_in_the_end(output) - 1
+                        preffered_num_of_blank_lines = self.c["num_of_blank_lines_before_class_structure"]
+                        diff = preffered_num_of_blank_lines - num_of_blank_lines_before
+                        if diff > 0:
+                            blank_lines = '\n' * diff
+                            cur_output = blank_lines + cur_output
                 elif cur_token.value in ("else", "catch"):
                     if cur_token.value == "else":
                         if self.c["else_on_new_line"] == 1:
@@ -169,7 +176,7 @@ class Formatter:
             elif cur_token.token_name == TokenName.IDENTIFIER:
                 if i + 1 < len(tokens) and tokens[i + 1].value == '{':  # initialization
                     if len(token_stack) > 0 and token_stack[-1] not in KEYWORDS:
-                        token_stack.append("identifier")  # FIXME
+                        token_stack.append("identifier")
                     cur_output = cur_token.value
                 elif (i+1 < len(tokens) and tokens[i+1].value == '(') or (i+2 < len(tokens) and tokens[i+1].token_name == TokenName.NEW_LINE and tokens[i+2].value == '('):  # func decl or call
                     if i == 0 or (i-1 >= 0 and tokens[i-1].token_name in (TokenName.OPERATOR, TokenName.NEW_LINE, TokenName.KEYWORD, TokenName.BRACKET, TokenName.SEPARATOR)):
@@ -178,11 +185,31 @@ class Formatter:
                         else:  # decl
                             cur_output = cur_token.value + (' ' if self.c["func_decl_parenthesis"] == 1 else '')
                             is_func_declaration = True
+
                     elif i-1 >= 0 and tokens[i-1].token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                         cur_output = cur_token.value
                     else:
                         cur_output = cur_token.value + (' ' if self.c["func_decl_parenthesis"] == 1 else '')
                         is_func_declaration = True
+                        if i-1 >= 0:
+                            ret_type_len = len(tokens[i-1].value)
+                            blank_lines = '\n' * self.c["num_of_blank_lines_before_function_def_or_decl"]
+                            tmp = output[:-ret_type_len - 1]  # space and ret type
+                            indent = 0
+                            while True:
+                                if len(tmp) > 0 and tmp[-1] == ' ':
+                                    tmp = tmp[:-1]
+                                    indent += 1
+                                else:
+                                    break
+                            num_of_blank_lines_before = self.find_num_of_blank_lines_in_the_end(tmp) - 1
+                            preffered_num_of_blank_lines = self.c["num_of_blank_lines_before_function_def_or_decl"]
+                            diff = preffered_num_of_blank_lines - num_of_blank_lines_before
+                            if diff >= 0:
+                                blank_lines = '\n' * diff
+                            elif num_of_blank_lines_before < 0:
+                                blank_lines = ''
+                            output = tmp + blank_lines + (' ' * indent) + tokens[i-1].value + ' '
                 else:
                     cur_output = cur_token.value
                     if i+1 < len(tokens) and tokens[i+1].token_name in (TokenName.IDENTIFIER, TokenName.KEYWORD):
@@ -216,6 +243,8 @@ class Formatter:
                                     else:
                                         cur_output = " {\n" if self.is_space_before_curly_open_brace(
                                             last_keyword) else "{\n"
+                                    blank_lines = '\n' * self.c["num_of_blank_lines_after_class_structure"]
+                                    cur_output = cur_output + blank_lines
                                 elif len(token_stack) > 0 and token_stack[-1] == "namespace":
                                     if self.c["brace_in_namespaces_at_new_line"] == 1:
                                         cur_output = "\n{\n"
@@ -432,6 +461,15 @@ class Formatter:
                     cur_output = (' ' * self.c["indent_visibility_keywords"]) + cur_token.value
             elif cur_token.token_name == TokenName.PREPROCESSOR:
                 cur_output = '#'
+                if i+1 < len(tokens) and tokens[i+1].value == "include" and len(output) != 0:
+                    num_of_blank_lines_before = self.find_num_of_blank_lines_in_the_end(output) - 1
+                    if num_of_blank_lines_before < 0:
+                        num_of_blank_lines_before = 0
+                    preffered_num_of_blank_lines = self.c["num_of_blank_lines_before_include"]
+                    diff = preffered_num_of_blank_lines - num_of_blank_lines_before
+                    if diff > 0:
+                        blank_lines = '\n' * diff
+                        cur_output = blank_lines + cur_output
                 cur_output = (' ' * self.c["preprocessor_directive_indent"]) + cur_output
                 self.need_indent = False
             elif cur_token.token_name == TokenName.WHITESPACE:
@@ -439,6 +477,9 @@ class Formatter:
             elif cur_token.token_name == TokenName.NEW_LINE:
                 if len(token_stack) > 0 and token_stack[-1] in PREPROCESSOR_DIRECTIVES:
                     cur_output = '\n'
+                    if token_stack[-1] == "include":
+                        blank_lines = '\n' * self.c["num_of_blank_lines_after_include"]
+                        cur_output = cur_output + blank_lines
                     token_stack.pop()
             else:
                 cur_output = cur_token.value
@@ -488,16 +529,8 @@ class Formatter:
         self.save_formatted_file(formatted_code, file_path)
 
     def save_formatted_file(self, formatted_code, file_path):
-        if file_path.endswith(".cpp"):
-            file_path = file_path[:-4]
-            file_path = file_path + "_formatted.cpp"
-            with open(file_path, 'w') as file:
-                file.write(formatted_code)
-        elif file_path.endswith(".h"):
-            file_path = file_path[:-2]
-            file_path = file_path + "_formatted.h"
-            with open(file_path, 'w') as file:
-                file.write(formatted_code)
+        with open(file_path, 'w') as file:
+            file.write(formatted_code)
 
     def show_help(self):
         with open("Readme.md", 'r', encoding="utf-8") as file:
@@ -562,3 +595,14 @@ class Formatter:
             logs = logs + cur_log
         with open(self.log_file_name, 'a', encoding="utf-8") as file:
             file.write(logs)
+
+    def find_num_of_blank_lines_in_the_end(self, text):
+        num_of_blank_lines = 0
+        i = len(text) - 1
+        while i >= 0:
+            if text[i] == '\n':
+                num_of_blank_lines += 1
+                i -= 1
+            else:
+                return num_of_blank_lines
+        return 0
