@@ -1,5 +1,5 @@
 class Logger:
-    def __init__(self, fix_log_file_name, verify_log_file_name, file_path):
+    def __init__(self, fix_log_file_name, verify_log_file_name):
         self.fix_log_file = open(fix_log_file_name, 'a', encoding='utf-8')
         self.verify_log_file = open(verify_log_file_name, 'a', encoding='utf-8')
 

@@ -1,3 +1,5 @@
 .idea/*
 venv/*
 __pycache__/*
+code_style_fixing.log
+code_style_verification.log
