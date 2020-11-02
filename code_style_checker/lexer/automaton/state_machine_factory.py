@@ -1,6 +1,6 @@
-from Lexer.Automaton.transition import *
-from Lexer.Automaton.state import *
-from Lexer.Automaton.finite_state_machine import *
+from lexer.automaton.transition import *
+from lexer.automaton.state import *
+from lexer.automaton.finite_state_machine import *
 
 
 def bracket_state_machine():

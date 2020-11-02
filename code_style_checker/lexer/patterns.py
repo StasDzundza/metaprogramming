@@ -1,5 +1,5 @@
-from Lexer.Automaton.state_machine_factory import *
-from Lexer.Token.token import *
+from lexer.automaton.state_machine_factory import *
+from lexer.token.token import *
 
 PATTERNS = ((new_line_state_machine(), TokenName.NEW_LINE),
             (whitespace_state_machine(), TokenName.WHITESPACE),

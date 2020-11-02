@@ -1,6 +1,6 @@
-from Lexer.patterns import *
-from Lexer.Automaton.automaton import *
-from Lexer.Automaton.finite_state_machine import *
+from lexer.patterns import *
+from lexer.automaton.automaton import *
+from lexer.automaton.finite_state_machine import *
 import re
 
 
