@@ -12,5 +12,5 @@ class Logger:
         self.fix_log_file.write(message)
 
     def log_style_error(self, file_path, line_num, error_code, error_message):
-        message = "{}: {} - {}: {}\n".format(file_path, line_num, error_code, error_message)
+        message = "{}: {} - {}: {}\n".format(file_path, line_num, error_code.name, error_message)
         self.verify_log_file.write(message)

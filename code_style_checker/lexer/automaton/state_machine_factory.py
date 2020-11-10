@@ -26,10 +26,12 @@ def separator_state_machine():
     q1 = State(True)  # :
     q2 = State(True)  # ,
     q3 = State(True)  # ;
+    q4 = State(True)  # ::
 
     initial.add_transition(SymbolTransition(":", q1))
     initial.add_transition(SymbolTransition(",", q2))
     initial.add_transition(SymbolTransition(";", q3))
+    q1.add_transition(SymbolTransition(":", q4))
     return FiniteStateMachine(initial)
 
 
