@@ -23,7 +23,7 @@ KEYWORDS = ("for", "if", "else", "do", "while", "break", "switch", "case", "catc
             "default", "delete", "new", "asm", "enum", "explicit", "export", "enter", "true", "false", "friend",
             "goto", "inline", "namespace", "mutable", "operator", "virtual", "override", "register", "return",
             "sizeof", "static", "class", "struct", "template", "this", "try", "union", "using", "volatile", "typedef",
-            "typeid", "typename")
+            "typeid", "typename", "std", "boost")
 
 DATA_TYPES = ("int", "float", "double", "char", "bool", "unsigned", "signed", "auto", "long", "wchar_t", "size_t",
               "void")

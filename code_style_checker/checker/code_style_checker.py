@@ -7,7 +7,11 @@ from checker.name_formatter import *
 class ErrorType(Enum):
     TypeNameError = 0,
     ClassMemberNameError = 1,
-    # ...
+    FunctionNameError = 2,
+    EnumMemberNameError = 3,
+    MacrosNameError = 4,
+    FileNameError = 5,
+    ConstMemberError = 6
 
 
 class CodeStyleChecker:
@@ -49,8 +53,35 @@ class CodeStyleChecker:
                                                                                         cur_output))
                     else:
                         cur_output = cur_token.value
-                elif len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum"):
-                    # class,struct,enum definition
+                elif len(token_stack) > 0 and token_stack[-1] == "define":  # macro
+                    token_stack.pop()  # remove define from stack
+                    cur_output = format_macro_name(cur_token.value)
+                    if cur_output != cur_token.value:
+                        self.logger.log_style_fix(file_path, cur_token.line,
+                                                  "fixed macro name {} to {}".format(cur_token.value,
+                                                                                     cur_output))
+                elif i + 1 < len(tokens) and tokens[i + 1].value == '(':  # function
+                    prev_token = self.get_prev_token(tokens, i)
+                    if prev_token is not None and (
+                            prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
+                            prev_token.value in ('*', '&')):  # func declaration
+                        defined_functions.append(cur_token.value)
+                        cur_output = format_func_name(cur_token.value)
+                        if cur_output != cur_token.value:
+                            self.logger.log_style_fix(file_path, cur_token.line,
+                                                      "fixed function name {} to {}".format(cur_token.value,
+                                                                                            cur_output))
+                    else:  # func invocation
+                        if cur_token.value in defined_functions or self.mode != '-f':
+                            cur_output = format_func_name(cur_token.value)
+                            if cur_output != cur_token.value:
+                                self.logger.log_style_fix(file_path, cur_token.line,
+                                                          "fixed function name {} to {}".format(cur_token.value,
+                                                                                                cur_output))
+                        else:
+                            cur_output = cur_token.value  # defined in other file
+                elif len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum", "typename"):
+                    # class,struct,enum, template definition
                     defined_type_names.append(cur_token.value)
                     cur_output = format_type_name(cur_token.value)
                     if cur_output != cur_token.value:
@@ -90,7 +121,7 @@ class CodeStyleChecker:
                 else:
                     cur_output = cur_token.value
             elif cur_token.token_name == TokenName.KEYWORD:
-                if cur_token.value in ("enum", "struct", "namespace"):
+                if cur_token.value in ("enum", "struct", "namespace", "typename"):
                     token_stack.append(cur_token.value)
                 elif cur_token.value == "class":
                     if len(token_stack) > 0 and token_stack[-1] == "enum":  # enum class situation
@@ -114,10 +145,34 @@ class CodeStyleChecker:
                     if len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:
                         token_stack.pop()  # remove access modifier from stack
                 cur_output = cur_token.value
+            elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
+                if cur_token.value in ("include", "define"):
+                    token_stack.append(cur_token.value)
+                cur_output = cur_token.value
+            elif cur_token.token_name == TokenName.STRING:
+                if len(token_stack) > 0 and token_stack[-1] == "include":
+                    token_stack.pop()
+                    if self.mode != "-f":
+                        file_name = cur_token.value[1:-1]
+                        cur_output = "\"" + format_file_name(file_name) + "\""
+                    else:
+                        cur_output = cur_token.value
+                else:
+                    cur_output = cur_token.value
+            elif cur_token.token_name == TokenName.COMPARISON_OPERATOR:
+                if cur_token.value == '<':  # include, template
+                    if len(token_stack) > 0 and token_stack[-1] == "include":
+                        token_stack.pop()
+                    #  token_stack.append('<')
+                elif cur_token.value == '>':
+                    pass
+                cur_output = cur_token.value
             else:
                 cur_output = cur_token.value
             output = output + cur_output
             i += 1
+        # formatted_file_name = os.path.basename(file_path)
+        # if self.mode != '-f':
         formatted_file_name = format_file_name(os.path.basename(file_path))
         dir_name = os.path.dirname(file_path)
         self.save_text_in_file(os.path.join(dir_name, formatted_file_name), output)
@@ -157,15 +212,14 @@ class CodeStyleChecker:
 
     @staticmethod
     def get_prev_token(tokens, index):
-        if index - 1 >= 0:
-            if tokens[index - 1].token_name != TokenName.WHITESPACE:
+        if len(tokens) == 0:
+            return None
+        while index - 1 >= 0:
+            if tokens[index - 1].token_name not in (TokenName.WHITESPACE, TokenName.NEW_LINE):
                 return tokens[index - 1]
-            elif tokens[index - 1].token_name == TokenName.WHITESPACE and index - 2 >= 0 and \
-                    tokens[index - 2].token_name != TokenName.WHITESPACE:
-                return tokens[index - 2]
-            return None
-        else:
-            return None
+            else:
+                index -= 1
+        return None
 
     @staticmethod
     def show_help():
