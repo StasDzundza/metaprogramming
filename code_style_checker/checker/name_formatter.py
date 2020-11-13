@@ -96,6 +96,8 @@ def format_const_var_name(const_var_name):
 def format_func_name(func_name):
     """Regular functions have mixed case; accessors and mutators may be named like variables.
     Ordinarily, functions should start with a capital letter and have a capital letter for each new word."""
+    if func_name == "main":
+        return "main"
     return format_type_name(func_name)
 
 

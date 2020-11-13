@@ -36,8 +36,11 @@ class CodeStyleChecker:
         i = 0
         while i < len(tokens):
             cur_token = tokens[i]
-            cur_output = ""
             if cur_token.token_name == TokenName.IDENTIFIER:
+                if cur_token.value == "bVar":
+                    print("hello")
+                prev_token = self.get_prev_token(tokens, i)
+                next_token = self.get_next_token(tokens, i)
                 if i + 1 < len(tokens) and tokens[i + 1].value == "::":  # namespace or type names before ::
                     if cur_token.value in defined_namespaces or self.mode != '-f':
                         cur_output = format_common_var_name(cur_token.value)
@@ -51,8 +54,7 @@ class CodeStyleChecker:
                     token_stack.pop()  # remove define from stack
                     cur_output = format_macro_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.MacrosNameError, working_mode)
-                elif i + 1 < len(tokens) and tokens[i + 1].value == '(':  # function
-                    prev_token = self.get_prev_token(tokens, i)
+                elif next_token is not None and next_token.value == '(':  # function
                     if prev_token is not None and (
                             prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
                             prev_token.value in ('*', '&')):  # func declaration
@@ -62,7 +64,8 @@ class CodeStyleChecker:
                     else:  # func invocation
                         if cur_token.value in defined_functions or self.mode != '-f':
                             cur_output = format_func_name(cur_token.value)
-                            self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError, working_mode)
+                            self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError,
+                                             working_mode)
                         else:
                             cur_output = cur_token.value  # defined in other file
                 elif len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum", "typename"):
@@ -70,6 +73,8 @@ class CodeStyleChecker:
                     defined_type_names.append(cur_token.value)
                     cur_output = format_type_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
+                    if token_stack[-1] == "typename":
+                        token_stack.pop()
                 elif len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:  # inheritance
                     token_stack.pop()  # remove access modifier from stack
                     if cur_token.value in defined_type_names or self.mode != '-f':
@@ -77,7 +82,14 @@ class CodeStyleChecker:
                         self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
                     else:
                         cur_output = cur_token.value
-                elif len(token_stack) > 1 and token_stack[-2] == "class":  # class member TODO check for func decl
+                elif next_token is not None and (next_token.token_name == TokenName.IDENTIFIER or next_token.value in
+                                                 ('*', '&', '<')):  # type name
+                    if cur_token.value in defined_type_names or self.mode != "-f":
+                        cur_output = format_type_name(cur_token.value)
+                        self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
+                    else:
+                        cur_output = cur_token.value
+                elif len(token_stack) > 1 and token_stack[-2] == "class":  # class member FIXME const, ::
                     prev_token = self.get_prev_token(tokens, i)
                     if prev_token is not None and (prev_token.token_name in (TokenName.IDENTIFIER, TokenName.DATA_TYPE)
                                                    or prev_token.value in ('*', ',', '&')):
@@ -93,7 +105,8 @@ class CodeStyleChecker:
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.NamespaceNameError, working_mode)
                 else:
-                    cur_output = cur_token.value
+                    cur_output = format_common_var_name(cur_token.value)
+                    self.log_if_need(file_path, cur_token, cur_output, ErrorType.CommonVarNameError, working_mode)
             elif cur_token.token_name == TokenName.KEYWORD:
                 if cur_token.value in ("enum", "struct", "namespace", "typename"):
                     token_stack.append(cur_token.value)
@@ -133,7 +146,7 @@ class CodeStyleChecker:
                         cur_output = cur_token.value
                 else:
                     cur_output = cur_token.value
-            elif cur_token.token_name == TokenName.COMPARISON_OPERATOR:
+            elif cur_token.token_name == TokenName.OPERATOR:
                 if cur_token.value == '<':  # include, template
                     if len(token_stack) > 0 and token_stack[-1] == "include":
                         token_stack.pop()
@@ -239,6 +252,17 @@ class CodeStyleChecker:
                 return tokens[index - 1]
             else:
                 index -= 1
+        return None
+
+    @staticmethod
+    def get_next_token(tokens, index):
+        if len(tokens) == 0:
+            return None
+        while index + 1 < len(tokens):
+            if tokens[index + 1].token_name not in (TokenName.WHITESPACE, TokenName.NEW_LINE):
+                return tokens[index + 1]
+            else:
+                index += 1
         return None
 
     @staticmethod
