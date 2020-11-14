@@ -132,3 +132,60 @@ def format_macro_name(macro_name):
             formatted_macro_name = formatted_macro_name + macro_name[i]
         i += 1
     return str.upper(formatted_macro_name)
+
+
+def format_single_line_comment(comment):
+    comment_parts = split_large_comment(comment, True)
+    result_comment = ""
+    was_space = False
+    for comment_part in comment_parts:
+        cur_comment_line = "//"
+        for symbol in comment_part:
+            if symbol == ' ':
+                if not was_space:
+                    was_space = True
+                    cur_comment_line = cur_comment_line + ' '
+            else:
+                was_space = False
+                cur_comment_line = cur_comment_line + symbol
+        cur_comment_line = cur_comment_line.replace('\n', "")
+        cur_comment_line = cur_comment_line + '\n'
+        if cur_comment_line[2] != ' ':
+            cur_comment_line = cur_comment_line[0:2] + ' ' + cur_comment_line[2:len(cur_comment_line)]
+        result_comment = result_comment + cur_comment_line
+    return result_comment[0:-1]
+
+
+def format_multi_line_comment(comment):
+    comment = comment.replace('\n', ' ')
+    comment = comment.strip()
+    comment_parts = split_large_comment(comment, False)
+    result_comment = ""
+    for single_comment in comment_parts:
+        result_comment = result_comment + format_single_line_comment(single_comment) + '\n'
+    return result_comment
+
+
+def split_large_comment(comment, single_line):
+    max_comment_len = 80
+    if single_line:
+        if len(comment) >= 2 and comment[0:2] == "//":
+            comment = comment[2:len(comment)]  # remove //
+    else:
+        comment = comment[2:-2]  # remove /**/
+    comment_parts = []
+    comment_len = len(comment)
+    from_pos = 0
+    while True:
+        if from_pos + max_comment_len < comment_len:
+            comment_part = comment[from_pos:from_pos + max_comment_len]
+            comment_parts.append(comment_part)
+            from_pos = from_pos + max_comment_len
+        else:
+            comment_part = comment[from_pos:comment_len]
+            comment_parts.append(comment_part)
+            break
+    return comment_parts
+
+
+

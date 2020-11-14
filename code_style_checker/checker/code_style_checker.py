@@ -40,6 +40,7 @@ class CodeStyleChecker:
         token_stack = []
         output = ""
         i = 0
+        was_comment = False
         while i < len(tokens):
             cur_token = tokens[i]
             if cur_token.token_name == TokenName.IDENTIFIER:
@@ -123,6 +124,7 @@ class CodeStyleChecker:
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.CommonVarNameError, working_mode)
                 if cur_token.value in self.defined_const_vars:
                     cur_output = format_const_var_name(cur_token.value)
+                was_comment = False
             elif cur_token.token_name == TokenName.KEYWORD:
                 if cur_token.value in ("enum", "struct", "namespace", "typename"):
                     token_stack.append(cur_token.value)
@@ -132,27 +134,33 @@ class CodeStyleChecker:
                     else:
                         token_stack.append(cur_token.value)
                 cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.BRACKET:
                 if cur_token.value == "{":
                     token_stack.append("{")
                 elif cur_token.value == "}":
-                    token_stack.pop()
+                    if len(token_stack) > 0:
+                        token_stack.pop()
                     if len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum", "namespace"):
                         token_stack.pop()  # remove keyword from stack
                         self.template_typename.clear()
                 cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.ACCESS_MODIFIER:
                 token_stack.append(cur_token.value)
                 cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.SEPARATOR:
                 if cur_token.value == ":":
                     if len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:
                         token_stack.pop()  # remove access modifier from stack
                 cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.PREPROCESSOR_DIRECTIVE:
                 if cur_token.value in ("include", "define"):
                     token_stack.append(cur_token.value)
                 cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.STRING:
                 if len(token_stack) > 0 and token_stack[-1] == "include":
                     token_stack.pop()
@@ -163,6 +171,7 @@ class CodeStyleChecker:
                         cur_output = cur_token.value
                 else:
                     cur_output = cur_token.value
+                was_comment = False
             elif cur_token.token_name == TokenName.OPERATOR:
                 if cur_token.value == '<':  # include, template
                     if len(token_stack) > 0 and token_stack[-1] == "include":
@@ -171,7 +180,20 @@ class CodeStyleChecker:
                 elif cur_token.value == '>':
                     pass
                 cur_output = cur_token.value
+                was_comment = False
+            elif cur_token.token_name == TokenName.SINGLE_LINE_COMMENT:
+                was_comment = True
+                cur_output = format_single_line_comment(cur_token.value)
+            elif cur_token.token_name == TokenName.MULTILINE_COMMENT:
+                was_comment = True
+                cur_output = format_multi_line_comment(cur_token.value)
+            elif cur_token.token_name == TokenName.NEW_LINE:
+                if not was_comment:
+                    cur_output = '\n'
+                else:
+                    cur_output = ""
             else:
+                was_comment = False
                 cur_output = cur_token.value
             if working_mode == WorkingMode.VerifyMode:
                 cur_output = cur_token.value
@@ -232,7 +254,8 @@ class CodeStyleChecker:
                         token_stack.pop()  # const method, not var
                     token_stack.append("{")
                 elif cur_token.value == "}":
-                    token_stack.pop()
+                    if len(token_stack) > 0:
+                        token_stack.pop()
                     if len(token_stack) > 0 and token_stack[-1] == "class":
                         token_stack.pop()  # remove keyword from stack
                 elif cur_token.value == ')' and is_func_decl:
