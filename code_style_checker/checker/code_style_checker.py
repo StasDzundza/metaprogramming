@@ -30,12 +30,9 @@ class CodeStyleChecker:
         self.defined_vars = []
         self.defined_file_names = []
         self.defined_enums = []
+        self.template_typename = []
 
     def fix_code_style(self, file_path, working_mode: WorkingMode):
-        self.defined_const_vars.clear()
-        self.defined_class_members.clear()
-        self.defined_vars.clear()
-        self.preprocess_vars(file_path)
         lexer = Lexer()
         with open(file_path, 'r', encoding="utf-8") as file:
             cpp_code = file.read()
@@ -79,6 +76,7 @@ class CodeStyleChecker:
                     cur_output = format_type_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
                     if token_stack[-1] == "typename":
+                        self.template_typename.append(cur_token.value)
                         token_stack.pop()
                 elif len(token_stack) > 0 and token_stack[-1] in ACCESS_MODIFIERS:  # inheritance
                     token_stack.pop()  # remove access modifier from stack
@@ -89,7 +87,7 @@ class CodeStyleChecker:
                         cur_output = cur_token.value
                 elif next_token is not None and (next_token.token_name == TokenName.IDENTIFIER or next_token.value in
                                                  ('*', '&', '<')):  # type name
-                    if cur_token.value in self.defined_type_names:
+                    if cur_token.value in self.defined_type_names or cur_token.value in self.template_typename:
                         cur_output = format_type_name(cur_token.value)
                         self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
                     else:
@@ -117,6 +115,9 @@ class CodeStyleChecker:
                 elif len(token_stack) > 0 and token_stack[-1] == "namespace":
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.NamespaceNameError, working_mode)
+                elif prev_token is not None and prev_token.value in ('.', '->') \
+                        and cur_token.value in self.defined_class_members:
+                    cur_output = format_class_var_name(cur_token.value)
                 else:
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.CommonVarNameError, working_mode)
@@ -138,6 +139,7 @@ class CodeStyleChecker:
                     token_stack.pop()
                     if len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum", "namespace"):
                         token_stack.pop()  # remove keyword from stack
+                        self.template_typename.clear()
                 cur_output = cur_token.value
             elif cur_token.token_name == TokenName.ACCESS_MODIFIER:
                 token_stack.append(cur_token.value)
@@ -178,36 +180,13 @@ class CodeStyleChecker:
         if working_mode == WorkingMode.FixMode:
             formatted_file_name = format_file_name(os.path.basename(file_path))
             dir_name = os.path.dirname(file_path)
-            self.save_text_in_file(os.path.join(dir_name, formatted_file_name), output)
+            new_file_path = os.path.join(dir_name, formatted_file_name)
+            self.save_text_in_file(new_file_path, output)
+            # if file_path != new_file_path:
+            #    os.remove(file_path)
 
     def preprocess_file(self, file_path):
         self.defined_file_names.append(os.path.basename(file_path))
-        lexer = Lexer()
-        with open(file_path, 'r', encoding="utf-8") as file:
-            cpp_code = file.read()
-        tokens = lexer.tokenize(cpp_code)
-        i = 0
-        while i < len(tokens):
-            cur_token = tokens[i]
-            if cur_token.token_name == TokenName.IDENTIFIER:
-                prev_token = self.get_prev_token(tokens, i)
-                next_token = self.get_next_token(tokens, i)
-                if prev_token is not None and prev_token.value in ("class", "struct", "enum", "typename"):
-                    self.defined_type_names.append(cur_token.value)
-                    prev_prev_token = self.get_prev_token(tokens, i - 1)
-                    if prev_token.value == "enum" or (prev_prev_token is not None and
-                                                      prev_prev_token.value == "enum"):
-                        self.defined_enums.append(cur_token.value)
-                elif prev_token is not None and prev_token.value == "namespace":
-                    self.defined_namespaces.append(cur_token.value)
-                elif next_token is not None and next_token.value == '(':  # function
-                    if prev_token is not None and (
-                            prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
-                            prev_token.value in ('*', '&')):  # func declaration
-                        self.defined_functions.append(cur_token.value)
-            i += 1
-
-    def preprocess_vars(self, file_path):
         lexer = Lexer()
         with open(file_path, 'r', encoding="utf-8") as file:
             cpp_code = file.read()
@@ -220,13 +199,20 @@ class CodeStyleChecker:
             if cur_token.token_name == TokenName.IDENTIFIER:
                 prev_token = self.get_prev_token(tokens, i)
                 next_token = self.get_next_token(tokens, i)
-                if next_token is not None and next_token.value == '(':  # function
+                if prev_token is not None and prev_token.value in ("class", "struct", "enum"):
+
+                    self.defined_type_names.append(cur_token.value)
+                    prev_prev_token = self.get_prev_token(tokens, i - 1)
+                    if prev_token.value == "enum" or (prev_prev_token is not None and
+                                                      prev_prev_token.value == "enum"):
+                        self.defined_enums.append(cur_token.value)
+                elif prev_token is not None and prev_token.value == "namespace":
+                    self.defined_namespaces.append(cur_token.value)
+                elif next_token is not None and next_token.value == '(':  # function
                     if prev_token is not None and (
                             prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
                             prev_token.value in ('*', '&')):  # func declaration
                         is_func_decl = True
-                        if len(token_stack) > 0 and token_stack[-1] == "const":
-                            token_stack.pop()  # const method, not var
                         self.defined_functions.append(cur_token.value)
                 elif prev_token is not None and (prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
                                                  prev_token.value in ('*', '&', ',')):  # identifier declaration
@@ -338,15 +324,18 @@ class CodeStyleChecker:
             self.run_for_file(mode, file, False)
 
     def run_for_file(self, mode, file_path, need_preprocess=True):
-        if need_preprocess:
-            self.__reset()
-            self.preprocess_file(file_path)
-        if mode in ("--verify", "-v"):
-            self.fix_code_style(file_path, WorkingMode.VerifyMode)
-        elif mode in ("--fix", "-f"):
-            self.fix_code_style(file_path, WorkingMode.FixMode)
+        if os.path.exists(file_path):
+            if need_preprocess:
+                self.__reset()
+                self.preprocess_file(file_path)
+            if mode in ("--verify", "-v"):
+                self.fix_code_style(file_path, WorkingMode.VerifyMode)
+            elif mode in ("--fix", "-f"):
+                self.fix_code_style(file_path, WorkingMode.FixMode)
+            else:
+                print("Incorrect mode")
         else:
-            print("Incorrect mode")
+            print("file {} doesn't exists".format(file_path))
 
     @staticmethod
     def get_prev_token(tokens, index):
