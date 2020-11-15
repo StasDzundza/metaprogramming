@@ -2,7 +2,7 @@ import os
 from utils.logger import *
 from lexer.lexer import *
 from checker.name_formatter import *
-from WorkingMode import *
+from checker.WorkingMode import *
 
 
 class ErrorType(Enum):
@@ -116,12 +116,15 @@ class CodeStyleChecker:
                 elif len(token_stack) > 0 and token_stack[-1] == "namespace":
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.NamespaceNameError, working_mode)
-                elif prev_token is not None and prev_token.value in ('.', '->') \
-                        and cur_token.value in self.defined_class_members:
-                    cur_output = format_class_var_name(cur_token.value)
+                elif prev_token is not None and prev_token.value in ('.', '->'):
+                    if cur_token.value in self.defined_class_members:
+                        cur_output = format_class_var_name(cur_token.value)
+                    else:
+                        cur_output = cur_token.value
                 else:
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.CommonVarNameError, working_mode)
+                next_token = self.get_next_token(tokens, i)
                 if cur_token.value in self.defined_const_vars:
                     cur_output = format_const_var_name(cur_token.value)
                 was_comment = False
@@ -204,8 +207,8 @@ class CodeStyleChecker:
             dir_name = os.path.dirname(file_path)
             new_file_path = os.path.join(dir_name, formatted_file_name)
             self.save_text_in_file(new_file_path, output)
-            # if file_path != new_file_path:
-            #    os.remove(file_path)
+            if file_path != new_file_path:
+                os.remove(file_path)
 
     def preprocess_file(self, file_path):
         self.defined_file_names.append(os.path.basename(file_path))

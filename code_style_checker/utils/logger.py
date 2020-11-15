@@ -1,4 +1,4 @@
-from WorkingMode import *
+from checker.WorkingMode import *
 
 
 class Logger:

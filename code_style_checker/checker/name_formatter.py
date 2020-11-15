@@ -153,7 +153,7 @@ def format_single_line_comment(comment):
         if cur_comment_line[2] != ' ':
             cur_comment_line = cur_comment_line[0:2] + ' ' + cur_comment_line[2:len(cur_comment_line)]
         result_comment = result_comment + cur_comment_line
-    return result_comment[0:-1]
+    return result_comment
 
 
 def format_multi_line_comment(comment):
@@ -162,7 +162,7 @@ def format_multi_line_comment(comment):
     comment_parts = split_large_comment(comment, False)
     result_comment = ""
     for single_comment in comment_parts:
-        result_comment = result_comment + format_single_line_comment(single_comment) + '\n'
+        result_comment = result_comment + format_single_line_comment(single_comment)
     return result_comment
 
 

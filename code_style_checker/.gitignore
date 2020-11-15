@@ -3,5 +3,6 @@ venv/*
 __pycache__/*
 code_style_fixing.log
 code_style_verification.log
-Test/my_class.cpp
-Test/my_other_class.h
+unittests/TestData/my_class.cpp
+unittests/TestData/my_other_class.h
+TestData/*
