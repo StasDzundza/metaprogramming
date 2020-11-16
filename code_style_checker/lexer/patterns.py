@@ -10,9 +10,9 @@ PATTERNS = ((new_line_state_machine(), TokenName.NEW_LINE),
             (r"//.*(\r|\n|\r\n|$)", TokenName.SINGLE_LINE_COMMENT),
             (r"([0-9]*\.)[0-9]+", TokenName.FLOAT_NUMBER),
             (r"[0-9]+", TokenName.INT_NUMBER),
+            (comparison_operator_state_machine(), TokenName.OPERATOR),
             (r"<<", TokenName.OPERATOR),
             (r">>", TokenName.OPERATOR),
-            (comparison_operator_state_machine(), TokenName.OPERATOR),
             (operator_state_machine(), TokenName.OPERATOR),
             (separator_state_machine(), TokenName.SEPARATOR),
             (bracket_state_machine(), TokenName.BRACKET),
@@ -23,7 +23,7 @@ KEYWORDS = ("for", "if", "else", "do", "while", "break", "switch", "case", "catc
             "default", "delete", "new", "asm", "enum", "explicit", "export", "enter", "true", "false", "friend",
             "goto", "inline", "namespace", "mutable", "operator", "virtual", "override", "register", "return",
             "sizeof", "static", "class", "struct", "template", "this", "try", "union", "using", "volatile", "typedef",
-            "typeid", "typename", "std", "boost")
+            "typeid", "typename", "std", "boost", "NULL")
 
 DATA_TYPES = ("int", "float", "double", "char", "bool", "unsigned", "signed", "auto", "long", "wchar_t", "size_t",
               "void")

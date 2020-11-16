@@ -41,11 +41,15 @@ class CodeStyleChecker:
         output = ""
         i = 0
         was_comment = False
+        template_inst = False
         while i < len(tokens):
             cur_token = tokens[i]
+            prev_token = self.get_prev_token(tokens, i)
+            next_token = self.get_next_token(tokens, i)
+            next_next_token = self.get_next_token(tokens, i + 1)
+            if cur_token.value == "<" and next_token is not None and next_token.value == "HTTP":
+                print("HTTP")
             if cur_token.token_name == TokenName.IDENTIFIER:
-                prev_token = self.get_prev_token(tokens, i)
-                next_token = self.get_next_token(tokens, i)
                 if i + 1 < len(tokens) and tokens[i + 1].value == "::":  # namespace or type names before ::
                     if cur_token.value in self.defined_namespaces:
                         cur_output = format_common_var_name(cur_token.value)
@@ -112,6 +116,12 @@ class CodeStyleChecker:
                         cur_output = format_class_var_name(cur_token.value)
                     else:
                         cur_output = cur_token.value
+                elif template_inst:
+                    if cur_token.value in self.defined_type_names:
+                        cur_output = format_type_name(cur_token.value)
+                        self.log_if_need(file_path, cur_token, cur_output, ErrorType.TypeNameError, working_mode)
+                    else:
+                        cur_output = cur_token.value
                 elif "class" in token_stack:  # class member
                     if cur_token.value in self.defined_class_members:
                         cur_output = format_class_var_name(cur_token.value)
@@ -133,7 +143,6 @@ class CodeStyleChecker:
                 else:
                     cur_output = format_common_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.CommonVarNameError, working_mode)
-                next_token = self.get_next_token(tokens, i)
                 if cur_token.value in self.defined_const_vars:
                     cur_output = format_const_var_name(cur_token.value)
                 was_comment = False
@@ -188,9 +197,11 @@ class CodeStyleChecker:
                 if cur_token.value == '<':  # include, template
                     if len(token_stack) > 0 and token_stack[-1] == "include":
                         token_stack.pop()
-                    #  token_stack.append('<')
+                    if next_token is not None and next_token.token_name in (TokenName.IDENTIFIER, TokenName.SEPARATOR):
+                        if next_next_token is not None and next_next_token.value in (',', '>'):
+                            template_inst = True
                 elif cur_token.value == '>':
-                    pass
+                    template_inst = False
                 cur_output = cur_token.value
                 was_comment = False
             elif cur_token.token_name == TokenName.SINGLE_LINE_COMMENT:
