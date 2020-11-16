@@ -48,6 +48,7 @@ class Lexer:
                         is_matched = True
                         i = match_pos.end()
                         self.tokens.append(Token(pattern_pair[1], matched_text, position[0], position[1]))
+                        break
             if not is_matched:
                 self.tokens.append(Token(TokenName.ERROR_TOKEN, line[i]))
                 i += 1

@@ -136,6 +136,8 @@ def format_macro_name(macro_name):
 
 def format_single_line_comment(comment):
     comment_parts = split_large_comment(comment, True)
+    if len(comment_parts) == 1 and comment_parts[0] == "\n":
+        return ""
     result_comment = ""
     was_space = False
     for comment_part in comment_parts:
