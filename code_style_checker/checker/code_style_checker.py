@@ -47,8 +47,6 @@ class CodeStyleChecker:
             prev_token = self.get_prev_token(tokens, i)
             next_token = self.get_next_token(tokens, i)
             next_next_token = self.get_next_token(tokens, i + 1)
-            if cur_token.value == "<" and next_token is not None and next_token.value == "HTTP":
-                print("HTTP")
             if cur_token.token_name == TokenName.IDENTIFIER:
                 if i + 1 < len(tokens) and tokens[i + 1].value == "::":  # namespace or type names before ::
                     if cur_token.value in self.defined_namespaces:
@@ -133,8 +131,11 @@ class CodeStyleChecker:
                     cur_output = format_const_var_name(cur_token.value)
                     self.log_if_need(file_path, cur_token, cur_output, ErrorType.EnumMemberNameError, working_mode)
                 elif len(token_stack) > 0 and token_stack[-1] == "namespace":
-                    cur_output = format_common_var_name(cur_token.value)
-                    self.log_if_need(file_path, cur_token, cur_output, ErrorType.NamespaceNameError, working_mode)
+                    if cur_token.value in self.defined_namespaces:
+                        cur_output = format_common_var_name(cur_token.value)
+                        self.log_if_need(file_path, cur_token, cur_output, ErrorType.NamespaceNameError, working_mode)
+                    else:
+                        cur_output = cur_token.value
                 elif prev_token is not None and prev_token.value in ('.', '->'):
                     if cur_token.value in self.defined_class_members:
                         cur_output = format_class_var_name(cur_token.value)
@@ -227,8 +228,8 @@ class CodeStyleChecker:
             dir_name = os.path.dirname(file_path)
             new_file_path = os.path.join(dir_name, formatted_file_name)
             self.save_text_in_file(new_file_path, output)
-            # if file_path != new_file_path:
-            #    os.remove(file_path)
+            if file_path != new_file_path:
+                os.remove(file_path)
 
     def preprocess_file(self, file_path):
         self.defined_file_names.append(os.path.basename(file_path))
@@ -248,7 +249,6 @@ class CodeStyleChecker:
                 if prev_token is not None and prev_token.value in ("class", "struct", "enum"):
 
                     self.defined_type_names.append(cur_token.value)
-                    prev_prev_token = self.get_prev_token(tokens, i - 1)
                     if prev_token.value == "enum" or (prev_prev_token is not None and
                                                       prev_prev_token.value == "enum"):
                         self.defined_enums.append(cur_token.value)
