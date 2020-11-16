@@ -67,9 +67,18 @@ class CodeStyleChecker:
                         self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError, working_mode)
                     else:  # func invocation
                         if cur_token.value in self.defined_functions:
-                            cur_output = format_func_name(cur_token.value)
-                            self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError,
-                                             working_mode)
+                            if prev_token is not None and prev_token.value == "::":
+                                if prev_prev_token is not None and (prev_prev_token.value in self.defined_type_names or
+                                                                    self.defined_namespaces):
+                                    cur_output = format_func_name(cur_token.value)
+                                    self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError,
+                                                     working_mode)
+                                else:
+                                    cur_output = cur_token.value  # defined in other file
+                            else:
+                                cur_output = format_func_name(cur_token.value)
+                                self.log_if_need(file_path, cur_token, cur_output, ErrorType.FunctionNameError,
+                                                 working_mode)
                         else:
                             cur_output = cur_token.value  # defined in other file
                 elif len(token_stack) > 0 and token_stack[-1] in ("class", "struct", "enum", "typename"):
@@ -207,8 +216,8 @@ class CodeStyleChecker:
             dir_name = os.path.dirname(file_path)
             new_file_path = os.path.join(dir_name, formatted_file_name)
             self.save_text_in_file(new_file_path, output)
-            if file_path != new_file_path:
-                os.remove(file_path)
+            # if file_path != new_file_path:
+            #    os.remove(file_path)
 
     def preprocess_file(self, file_path):
         self.defined_file_names.append(os.path.basename(file_path))
@@ -223,6 +232,7 @@ class CodeStyleChecker:
             cur_token = tokens[i]
             if cur_token.token_name == TokenName.IDENTIFIER:
                 prev_token = self.get_prev_token(tokens, i)
+                prev_prev_token = self.get_prev_token(tokens, i-1)
                 next_token = self.get_next_token(tokens, i)
                 if prev_token is not None and prev_token.value in ("class", "struct", "enum"):
 
@@ -232,7 +242,8 @@ class CodeStyleChecker:
                                                       prev_prev_token.value == "enum"):
                         self.defined_enums.append(cur_token.value)
                 elif prev_token is not None and prev_token.value == "namespace":
-                    self.defined_namespaces.append(cur_token.value)
+                    if prev_prev_token is None and prev_prev_token.value != "using":  # using namespace ...
+                        self.defined_namespaces.append(cur_token.value)
                 elif next_token is not None and next_token.value == '(':  # function
                     if prev_token is not None and (
                             prev_token.token_name in (TokenName.DATA_TYPE, TokenName.IDENTIFIER) or
