@@ -47,6 +47,7 @@ class CodeStyleChecker:
             prev_token = self.get_prev_token(tokens, i)
             next_token = self.get_next_token(tokens, i)
             next_next_token = self.get_next_token(tokens, i + 1)
+            prev_prev_token = self.get_prev_token(tokens, i - 1)
             if cur_token.token_name == TokenName.IDENTIFIER:
                 if i + 1 < len(tokens) and tokens[i + 1].value == "::":  # namespace or type names before ::
                     if cur_token.value in self.defined_namespaces:
@@ -220,6 +221,8 @@ class CodeStyleChecker:
                 was_comment = False
                 cur_output = cur_token.value
             if working_mode == WorkingMode.VerifyMode:
+                cur_output = cur_token.value
+            if next_token is not None and next_token.token_name == TokenName.STRING:
                 cur_output = cur_token.value
             output = output + cur_output
             i += 1
@@ -414,5 +417,5 @@ class CodeStyleChecker:
 
     @staticmethod
     def save_text_in_file(file_path, text):
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w', encoding="utf-8") as file:
             file.write(text)
