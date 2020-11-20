@@ -1,0 +1,4 @@
+__pycache__/*
+TestData/*.log
+TestData/my_class.cpp
+TestData/my_other_class.h

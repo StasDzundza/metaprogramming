@@ -1,0 +1,8 @@
+.idea/*
+venv/*
+__pycache__/*
+code_style_fixing.log
+code_style_verification.log
+unittests/TestData/my_class.cpp
+unittests/TestData/my_other_class.h
+TestData/*

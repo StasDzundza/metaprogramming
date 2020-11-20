@@ -1,0 +1,62 @@
+#include "MyOtherClass.h"
+#include <iostream>
+#define PI_VALUE 3.14
+
+using std::cout;
+using std::endl;
+
+enum MyEnum{
+    kFirst = 1,
+    kSecond = 2
+}
+
+namespace my_namespace_first{
+    int b_var = 3;
+    const double kConstVarInNamespace = 3;
+    void Bar(){ std::cout << "some text" << std::endl; }
+}
+
+template<typename T, typename V>
+class MyClass : public my_other_class{
+public:
+    int* Foo(my_other_class &other){
+        not_existing_func();
+        second_var_ = kConstClassVar
+        return some_class_field_;
+    }
+
+    void ChangeParentMember(int value){
+        other_class_var = value;
+    }
+
+    V t1_;
+    T t2_;
+private:
+    int* some_class_field_ = new int(0);
+    int second_var_ = my_namespace_first::b_var;
+    int c_,d_ = 6,e_;
+    const int kConstClassVar = 6;
+    my_other_class m_;
+}
+
+void GlobalFunc(int a){}
+
+my_struct CreateMyStruct(int a){
+    my_struct m;
+    m.Something = 5;
+    return m;
+}
+int main(int &args, char**argv){
+    MyClass<int, double> *a = new MyClass<int, double>;
+    a->ChangeParentMember(6)
+    a->other_class_Var = 8;
+    my_other_class &other;
+    (*a).Foo(other);
+    int x = MyEnum::kSecond;
+    int y = OtherNamespace::one;
+    auto it = std::find_if()
+    my_other_class m;
+    const double kDoubleConstVar = m.foo_F(1.3)
+    my_struct m = CreateMyStruct(5);
+    return 0;
+}
